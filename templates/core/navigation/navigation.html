@@ -1,0 +1,31 @@
+<!-- core/templates/navigation.html -->
+<ul class="nav flex-column">
+    {% for item in nav_items %}
+        <li class="nav-item">
+            {% if item.is_collapse %}
+                <a href="{{ item.url }}"
+                   class="nav-link d-flex text-light align-items-center text-decoration-none"
+                   data-bs-target="#collapse{{ item.text|slugify }}"
+                   data-bs-toggle="collapse"
+                   role="button"
+                   aria-expanded="false"
+                   aria-controls="collapse{{ item.text|slugify }}">
+                    <i class="{{ item.icon }}"></i>
+                    <span class="px-2">{{ item.text }}</span>
+                </a>
+                <div class="collapse" id="collapse{{ item.text|slugify }}">
+                    <ul class="list-unstyled ps-5">
+                        {% for submenu in item.submenus %}
+                            <li><a href="{{ submenu.url }}" class="text-white text-decoration-none mt-2">{{ submenu.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <a href="{{ item.url }}" class="nav-link text-light text-accent-hover">
+                    <i class="{{ item.icon }}"></i>
+                    <span class="px-2">{{ item.text }}</span>
+                </a>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
