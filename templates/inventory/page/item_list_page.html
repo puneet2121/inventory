@@ -1,33 +1,84 @@
 {% extends 'core/page/full_page.html' %}
 
 {% block page_content %}
-    <table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">First</th>
-      <th scope="col">Last</th>
-      <th scope="col">Handle</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-    </tr>
-    <tr>
-      <th scope="row">3</th>
-      <td colspan="2">Larry the Bird</td>
-      <td>@twitter</td>
-    </tr>
-  </tbody>
-</table>
+    <div class="container table-container">
+    <h2 class="text-center mb-4">Product List</h2>
+
+    <!-- Search and Create Button Row -->
+    <div class="d-flex justify-content-between mb-3">
+        <!-- Search Bar -->
+        <div class="input-group" style="max-width: 400px;">
+            <input type="text" class="form-control" placeholder="Search for a product..." aria-label="Search">
+            <button class="btn btn-dark" type="button">Search</button>
+        </div>
+
+        <!-- Create New Product Button -->
+        <button href="/createitem" class="btn btn-success" type="button">
+            <i class="fas fa-plus"></i> Create New Product
+        </button>
+    </div>
+
+    <!-- Product Table -->
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th>Product ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Sample Data Rows -->
+                <tr>
+                    <td>101</td>
+                    <td>Phone Case</td>
+                    <td>Accessories</td>
+                    <td>$15.00</td>
+                    <td>In Stock</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" title="View"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-success" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>102</td>
+                    <td>Screen Protector</td>
+                    <td>Accessories</td>
+                    <td>$8.00</td>
+                    <td>Out of Stock</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" title="View"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-success" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>
+                <!-- Repeat rows as needed or dynamically generate rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
 {% endblock %}
