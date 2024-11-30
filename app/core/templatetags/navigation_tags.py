@@ -20,10 +20,10 @@ def render_navigation():
             'icon': 'bi bi-cart-dash',
             'text': 'Sales',
             'url': '/sales/',
-            'is_collapse': False,
+            'is_collapse': True,
             'submenus': [
                 {'name': 'Customers', 'url': '/customers/'},
-                {'name': 'Sales Order', 'url': '/salesorder/'},
+                {'name': 'Sales Order', 'url': '/point_of_sale/pos'},
                 {'name': 'Packages', 'url': '/packages/'},
                 {'name': 'invoices', 'url': '/invoices/'},
             ]

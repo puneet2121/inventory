@@ -1,7 +1,7 @@
 {% extends 'core/page/full_page.html' %}
 
 {% block page_content %}
-    <div class="container table-container">
+<div class="container table-container">
     <h2 class="text-center mb-4">Product List</h2>
 
     <!-- Search and Create Button Row -->
@@ -13,9 +13,9 @@
         </div>
 
         <!-- Create New Product Button -->
-        <button href="/createitem" class="btn btn-success" type="button">
+        <a href="{% url 'inventory:add_product' %}" class="btn btn-success">
             <i class="fas fa-plus"></i> Create New Product
-        </button>
+        </a>
     </div>
 
     <!-- Product Table -->
@@ -26,38 +26,44 @@
                     <th>Product ID</th>
                     <th>Name</th>
                     <th>Category</th>
+                    <th>Cost</th>
                     <th>Price</th>
                     <th>Stock</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Sample Data Rows -->
+                {% for product in products %}
                 <tr>
-                    <td>101</td>
-                    <td>Phone Case</td>
-                    <td>Accessories</td>
-                    <td>$15.00</td>
-                    <td>In Stock</td>
+                    <td>{{ product.id }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.category }}</td>
+                    <td>{{ product.cost }}</td>
+                    <td>${{ product.price }}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" title="View"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-sm btn-outline-success" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                        {% if product.stock > 0 %}
+                            In Stock ({{ product.stock }})
+                        {% else %}
+                            Out of Stock
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" title="View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </td>
                 </tr>
+                {% empty %}
                 <tr>
-                    <td>102</td>
-                    <td>Screen Protector</td>
-                    <td>Accessories</td>
-                    <td>$8.00</td>
-                    <td>Out of Stock</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" title="View"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-sm btn-outline-success" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash-alt"></i></button>
-                    </td>
+                    <td colspan="6" class="text-center">No products found</td>
                 </tr>
-                <!-- Repeat rows as needed or dynamically generate rows -->
+                {% endfor %}
             </tbody>
         </table>
     </div>

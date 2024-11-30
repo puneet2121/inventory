@@ -1,0 +1,62 @@
+{% extends 'core/page/full_page.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Create Sales Order</h2>
+    <form method="post" id="salesOrderForm">
+        {% csrf_token %}
+        <label for="customer_name" class="form-label">Customer Name:</label>
+        <input
+            type="text"
+            id="customer_name"
+            name="customer_name"
+            class="form-control mb-3"
+            placeholder="Optional">
+
+        <h3 class="mt-4">Products:</h3>
+        <div id="product-list" class="mb-4">
+            <!-- Dynamically Add Product Rows -->
+            <div class="row mb-3 product-row">
+                <div class="col-md-6">
+                    <label for="product" class="form-label">Product:</label>
+                    <select name="product" class="form-select" required>
+                        {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="quantity" class="form-label">Quantity:</label>
+                    <input
+                        type="number"
+                        name="quantity"
+                        class="form-control"
+                        placeholder="Quantity"
+                        required>
+                </div>
+                <div class="col-md-3">
+                    <label for="price" class="form-label">Price:</label>
+                    <input
+                        type="number"
+                        name="price"
+                        class="form-control"
+                        placeholder="Price"
+                        required>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary mb-3" onclick="addProductRow()">Add Product</button>
+        <button type="submit" class="btn btn-primary">Submit Order</button>
+    </form>
+</div>
+
+<script>
+    function addProductRow() {
+        const row = document.querySelector('.product-row').cloneNode(true);
+        row.querySelectorAll('input, select').forEach(input => input.value = ''); // Clear inputs
+        document.getElementById('product-list').appendChild(row);
+    }
+</script>
+{% endblock %}
