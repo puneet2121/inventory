@@ -1,0 +1,133 @@
+{% extends 'core/page/full_page.html' %}
+{% block page_content %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sales Overview Cards -->
+            <div class="col-md-4">
+                <div class="card text-white bg-primary mb-4">
+                    <div class="card-header">Sales Today</div>
+                    <div class="card-body">
+                        <h5 class="card-title">${{ total_sales_today }}</h5>
+                        <canvas id="salesTodayChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-white bg-success mb-4">
+                    <div class="card-header">Sales This Week</div>
+                    <div class="card-body">
+                        <h5 class="card-title">${{ total_sales_this_week }}</h5>
+                        <canvas id="salesThisWeekChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-white bg-warning mb-4">
+                    <div class="card-header">Sales Last Week</div>
+                    <div class="card-body">
+                        <h5 class="card-title">${{ total_sales_last_week }}</h5>
+                        <canvas id="salesLastWeekChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Inventory Products -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Low Inventory Products</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for product in low_inventory_products %}
+                        <li class="list-group-item">
+                            {{ product.name }} - {{ product.quantity }} left
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No products with low inventory.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Scripts -->
+    <script>
+        const salesTodayData = {
+            labels: ['Today'],
+            datasets: [{
+                label: 'Total Sales Today',
+                data: [{{ total_sales_today }}],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const salesThisWeekData = {
+            labels: ['This Week'],
+            datasets: [{
+                label: 'Total Sales This Week',
+                data: [{{ total_sales_this_week }}],
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const salesLastWeekData = {
+            labels: ['Last Week'],
+            datasets: [{
+                label: 'Total Sales Last Week',
+                data: [{{ total_sales_last_week }}],
+                backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        // Sales Today Chart
+        new Chart(document.getElementById('salesTodayChart'), {
+            type: 'bar',
+            data: salesTodayData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Sales This Week Chart
+        new Chart(document.getElementById('salesThisWeekChart'), {
+            type: 'bar',
+            data: salesThisWeekData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Sales Last Week Chart
+        new Chart(document.getElementById('salesLastWeekChart'), {
+            type: 'bar',
+            data: salesLastWeekData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}
