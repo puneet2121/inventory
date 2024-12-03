@@ -1,0 +1,33 @@
+{% extends 'core/page/full_page.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Customers with Debt</h2>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>City</th>
+                <th>Type</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Shop</th>
+                <th>Debt</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.city }}</td>
+                <td>{{ customer.get_customer_type_display }}</td>
+                <td>{{ customer.contact }}</td>
+                <td>{{ customer.email|default:"-" }}</td>
+                <td>{{ customer.shop|default:"-" }}</td>
+                <td>${{ customer.debt }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
