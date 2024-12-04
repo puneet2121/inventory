@@ -9,97 +9,118 @@
         {% csrf_token %}
         <div x-data="posPage()" class="needs-validation">
             <!-- Customer Information -->
-            <h4>Customer Information</h4>
-            <div class="form-group">
-                <label for="customer">Select Customer</label>
-                <select x-model="selectedCustomer" name="customer" id="customer" class="form-select">
-                    <option value="">Walk-in Customer</option>
-                    {% for customer in customers %}
-                        <option value="{{ customer.id }}">{{ customer.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group mt-3" x-show="selectedCustomer === ''">
-                <label for="customer_name">Other Customer (Optional)</label>
-                <input x-model="customerName" type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Enter customer name">
-            </div>
-
-            <div class="form-group mt-3" x-show="selectedCustomer">
-                <label>Total Debt</label>
-                <input type="number" class="form-control" readonly :value="selectedCustomerDebt" />
-            </div>
-
-            <!-- Product Selection -->
-            <h4 class="mt-4">Products</h4>
-            <template x-for="(product, index) in products" :key="index">
-                <div class="row mb-3 align-items-center">
-                    <div class="col-md-4">
-                        <label>Product Type</label>
-                        <select :name="'product[' + index + '][type]'" x-model="product.type" class="form-select">
-                            <option value="inventory">Inventory Product</option>
-                            <option value="custom">Custom Product</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4" x-show="product.type === 'inventory'">
-                        <label for="product">Select Product</label>
-                        <select :name="'product[' + index + '][id]'" x-model="product.id" class="form-select">
-                            <option value="">-- Select Product --</option>
-                            {% for product in products %}
-                                <option value="{{ product.id }}">{{ product.name }}</option>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Customer Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="customer" class="form-label">Select Customer</label>
+                        <select x-model="selectedCustomer" @change="fetchCustomerPrices()" name="customer" id="customer" class="form-select">
+                            <option value="">Walk-in Customer</option>
+                            {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4" x-show="product.type === 'custom'">
-                        <label for="custom_product_name">Custom Product Name</label>
-                        <input :name="'product[' + index + '][custom_name]'" x-model="product.customName" type="text" class="form-control" placeholder="Enter custom product name">
+
+                    <div class="mb-3" x-show="selectedCustomer === ''">
+                        <label for="customer_name" class="form-label">Other Customer (Optional)</label>
+                        <input x-model="customerName" type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Enter customer name">
                     </div>
-                    <div class="col-md-2">
-                        <label for="quantity">Quantity</label>
-                        <input :name="'product[' + index + '][quantity]'" x-model="product.quantity" type="number" class="form-control" min="1">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="price">Price</label>
-                        <input :name="'product[' + index + '][price]'" x-model="product.price" type="number" class="form-control" min="0" step="0.01">
-                    </div>
-                    <div class="col-md-2">
-                        <button type="button" @click="removeProduct(index)" class="btn btn-danger mt-4">Remove</button>
+
+                    <div class="mb-3" x-show="selectedCustomer">
+                        <label class="form-label">Total Debt</label>
+                        <input type="number" class="form-control" readonly :value="selectedCustomerDebt">
                     </div>
                 </div>
-            </template>
+            </div>
 
-            <button type="button" @click="addProduct" class="btn btn-secondary mt-3">Add Product</button>
+            <!-- Product Selection -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">Products</h4>
+                </div>
+                <div class="card-body">
+                    <template x-for="(product, index) in products" :key="index">
+                        <div class="row g-3 align-items-end mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">Product Type</label>
+                                <select :name="'product[' + index + '][type]'" x-model="product.type" class="form-select">
+                                    <option value="inventory">Inventory Product</option>
+                                    <option value="custom">Custom Product</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" x-show="product.type === 'inventory'">
+                                <label class="form-label">Select Product</label>
+                                <select :name="'product[' + index + '][id]'" x-model="product.id" @change="updatePrice(index)" class="form-select">
+                                    <option value="">-- Select Product --</option>
+                                    {% for product in products %}
+                                        <option value="{{ product.id }}">{{ product.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4" x-show="product.type === 'custom'">
+                                <label class="form-label">Custom Product Name</label>
+                                <input :name="'product[' + index + '][custom_name]'" x-model="product.customName" type="text" class="form-control" placeholder="Enter custom product name">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Quantity</label>
+                                <input :name="'product[' + index + '][quantity]'" x-model="product.quantity" type="number" class="form-control" min="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Price</label>
+                                <input :name="'product[' + index + '][price]'" x-model="product.price" type="number" class="form-control" min="0" step="0.01">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" @click="removeProduct(index)" class="btn btn-danger w-100">Remove</button>
+                            </div>
+                        </div>
+                    </template>
+                    <button type="button" @click="addProduct" class="btn btn-outline-secondary">Add Product</button>
+                </div>
+            </div>
 
             <!-- Payment Information -->
-            <h4 class="mt-4">Payment</h4>
-            <div class="form-group">
-                <label for="payment_status">Payment Status</label>
-                <select x-model="paymentStatus" class="form-select" id="payment_status" name="payment_status">
-                    <option value="unpaid">Unpaid</option>
-                    <option value="partial">Partial Paid</option>
-                    <option value="paid">Paid</option>
-                </select>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Payment</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="payment_status" class="form-label">Payment Status</label>
+                        <select x-model="paymentStatus" class="form-select" id="payment_status" name="payment_status">
+                            <option value="unpaid">Unpaid</option>
+                            <option value="partial">Partial Paid</option>
+                            <option value="paid">Paid</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" x-show="paymentStatus !== 'paid'">
+                        <label for="paid_amount" class="form-label">Paid Amount</label>
+                        <input x-model="paidAmount" type="number" class="form-control" id="paid_amount" name="paid_amount" min="0" step="0.01">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Total Price</label>
+                        <input type="number" class="form-control" readonly :value="calculateTotalPrice()">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Remaining Debt</label>
+                        <input type="number" class="form-control" readonly :value="calculateRemainingDebt()">
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group mt-3" x-show="paymentStatus !== 'paid'">
-                <label for="paid_amount">Paid Amount</label>
-                <input x-model="paidAmount" type="number" class="form-control" id="paid_amount" name="paid_amount" min="0" step="0.01">
-            </div>
-
-            <div class="form-group mt-3">
-                <label>Total Price</label>
-                <input type="number" class="form-control" readonly :value="calculateTotalPrice()" />
-            </div>
-
-            <div class="form-group mt-3">
-                <label>Remaining Debt</label>
-                <input type="number" class="form-control" readonly :value="calculateRemainingDebt()" />
-            </div>
-
-            <button type="submit" class="btn btn-primary mt-3">Submit Order</button>
+            <button type="submit" class="btn btn-primary w-100">Submit Order</button>
         </div>
     </form>
 </div>
+
+
+
+
 
 <script>
     document.addEventListener('alpine:init', () => {
@@ -110,6 +131,7 @@
             products: [],
             paymentStatus: 'unpaid',
             paidAmount: 0,
+            productPrices: {},
 
             addProduct() {
                 this.products.push({
@@ -123,6 +145,57 @@
             removeProduct(index) {
                 this.products.splice(index, 1);
             },
+            fetchCustomerPrices() {
+            if (this.selectedCustomer) {
+                // Fetch prices for a specific customer
+                fetch(`/point_of_sale/get_customer_price/${this.selectedCustomer}/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error fetching customer prices');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!data.error) {
+                            this.productPrices = data;
+                            this.products.forEach(product => {
+                                if (product.id) {
+                                    // Set customer-specific prices or default to 0
+                                    product.price = this.productPrices[product.id] || 0;
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error fetching prices for customer:', error));
+            } else {
+                // Fetch prices for walk-in customers (regular price)
+                this.products.forEach(product => {
+                    if (product.id) {
+                        fetch(`/point_of_sale/get_product_price/${product.id}/`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`Error fetching price for product ${product.id}`);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // Update the product price
+                                product.price = data.price || 0;
+                            })
+                            .catch(error => {
+                                console.error(`Error fetching price for product ${product.id}:`, error);
+                            });
+                    }
+                });
+            }
+            },
+
+            updatePrice(index) {
+                const productId = this.products[index].id;
+                if (productId && this.productPrices[productId]) {
+                    this.products[index].price = this.productPrices[productId];
+                }
+            },
             calculateTotalPrice() {
                 return this.products.reduce((total, product) => {
                     return total + (product.quantity * product.price);
@@ -134,4 +207,5 @@
         }));
     });
 </script>
+
 {% endblock %}

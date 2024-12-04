@@ -40,7 +40,6 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     price_A = models.DecimalField(max_digits=10, decimal_places=2)
     price_B = models.DecimalField(max_digits=10, decimal_places=2)
-    price_C = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     barcode = models.CharField(max_length=100, default='')

@@ -32,6 +32,8 @@ class ProductForm(forms.ModelForm):
                 Column("Category", css_class="form-group col-3"),
                 Column("cost", css_class="form-group col-6"),
                 Column("Price", css_class="form-group col-6"),
+                Column("Price A", css_class="form-group col-6"),
+                Column("Price B", css_class="form-group col-6"),
                 Column("description", css_class="form-group col-6"),
                 Column("barcode", css_class='form-group col-6'),
                 Column("model", css_class='form-group col-6'),
