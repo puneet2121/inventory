@@ -1,3 +1,4 @@
+import openpyxl
 from django.contrib import messages
 from django.core.files.storage import default_storage
 from django.forms import inlineformset_factory
@@ -7,6 +8,8 @@ from app.inventory.forms import ProductForm, InventoryImageForm, InventoryForm
 from app.inventory.models import Inventory, InventoryImage
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+import pandas as pd
 import requests
 from django.shortcuts import render
 
@@ -143,3 +146,93 @@ def upload_images(request, product_id):
         formset = InventoryImageFormSet()
 
     return render(request, 'inventory/page/image_upload.html', {'formset': formset})
+
+@login_required(login_url='/authentication/login/')
+def export_inventory(request):
+    # Create a workbook and select active worksheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Inventory"
+
+    # Add header row
+    headers = [
+        "Product Name", "Category", "Cost", "Price",
+        "Price A", "Price B", "Description",
+        "Location", "Quantity",
+    ]
+    ws.append(headers)
+
+    # Query inventory and product data
+    inventory_items = Inventory.objects.select_related('product').all()
+
+    # Populate rows
+    for item in inventory_items:
+        ws.append([
+            item.product.name,
+            item.product.category,
+            item.product.cost,
+            item.product.price,
+            item.product.price_A,
+            item.product.price_B,
+            item.product.description,
+            item.location,
+            item.quantity,
+
+        ])
+
+    # Create response with content type for Excel
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response['Content-Disposition'] = 'attachment; filename=inventory.xlsx'
+    wb.save(response)
+    return response
+
+
+@login_required(login_url='/authentication/login/')
+def import_inventory(request):
+    if request.method == "POST" and 'file' in request.FILES:
+        file = request.FILES['file']
+        if not file.name.endswith('.xlsx'):
+            messages.error(request, "Please upload a valid Excel (.xlsx) file.")
+            return redirect('inventory:list_inventory')
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            ws = wb.active
+
+            for row in ws.iter_rows(min_row=2, values_only=True):  # Skip header row
+                # Extract only the required columns
+                try:
+                    name, category, price, quantity = row[:4]  # Limit to the first 4 columns
+
+                    # Validate the data
+                    if not (name and category and price and quantity):
+                        continue  # Skip rows with missing essential data
+
+                    # Get or create Product
+                    product, created = Product.objects.get_or_create(
+                        name=name,
+                        defaults={"category": category, "price": price},
+                    )
+                    if not created:
+                        product.category = category
+                        product.price = price
+                        product.save()
+
+                    # Update or create Inventory for the product
+                    Inventory.objects.update_or_create(
+                        product=product,
+                        defaults={"quantity": quantity},
+                    )
+                except ValueError as e:
+                    # Handle specific row errors (e.g., too few or invalid values)
+                    continue
+
+            messages.success(request, "Inventory imported successfully!")
+        except Exception as e:
+            messages.error(request, f"Error during import: {str(e)}")
+        return redirect('inventory:item_list')
+
+    messages.error(request, "No file selected or invalid request.")
+    return redirect('inventory:item_list')

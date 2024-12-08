@@ -13,4 +13,6 @@ urlpatterns = [
     path('product/delete/<int:product_id>/', views.product_delete_view, name='delete_product'),
 
     path('upload/<int:product_id>/', views.upload_images, name='upload_images'),
+    path('export_inventory/', views.export_inventory, name='export_inventory'),
+    path('import_inventory/', views.import_inventory, name='import_inventory'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

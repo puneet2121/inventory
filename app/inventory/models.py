@@ -32,7 +32,6 @@ class Role(models.Model):
         db_table = 'role'
 
 
-
 class Product(models.Model):
     name = models.CharField(max_length=200)
     category = models.CharField(max_length=100, choices=CategoryTypeChoices.choices)
@@ -77,7 +76,6 @@ class Product(models.Model):
 #
 #     class Meta:
 #         db_table = 'order_item'
-
 
 
 class Inventory(models.Model):

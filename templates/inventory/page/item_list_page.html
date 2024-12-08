@@ -12,10 +12,21 @@
             <button class="btn btn-dark" type="button">Search</button>
         </div>
 
-        <!-- Create New Product Button -->
-        <a href="{% url 'inventory:add_product' %}" class="btn btn-success">
-            <i class="fas fa-plus"></i> Create New Product
-        </a>
+        <!-- Action Buttons (Create, Export, Import) -->
+        <div>
+            <!-- Create New Product Button -->
+            <a href="{% url 'inventory:add_product' %}" class="btn btn-success me-2">
+                <i class="fas fa-plus"></i> Create New Product
+            </a>
+            <!-- Export Inventory Button -->
+            <a href="{% url 'inventory:export_inventory' %}" class="btn btn-primary me-2">
+                <i class="fas fa-file-export"></i> Export
+            </a>
+            <!-- Import Inventory Button -->
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="fas fa-file-import"></i> Import
+            </button>
+        </div>
     </div>
 
     <!-- Product Table -->
@@ -61,7 +72,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center">No products found</td>
+                    <td colspan="7" class="text-center">No products found</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -86,5 +97,30 @@
             </li>
         </ul>
     </nav>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" enctype="multipart/form-data" action="{% url 'inventory:import_inventory' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">Import Inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload Excel File</label>
+                        <input type="file" name="file" id="file" class="form-control" accept=".xlsx">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
