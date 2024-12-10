@@ -1,34 +1,71 @@
 {% extends 'core/page/full_page.html' %}
 
-
 {% block page_content %}
 <div class="container mt-5">
-    <h2>Customer List</h2>
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>City</th>
-                <th>Type</th>
-                <th>Contact</th>
-                <th>Email</th>
-                <th>Shop</th>
-                <th>Debt</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for customer in customers %}
-            <tr>
-                <td>{{ customer.name }}</td>
-                <td>{{ customer.city }}</td>
-                <td>{{ customer.get_customer_type_display }}</td>
-                <td>{{ customer.contact }}</td>
-                <td>{{ customer.email|default:"-" }}</td>
-                <td>{{ customer.shop|default:"-" }}</td>
-                <td>${{ customer.debt }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">Customer List</h2>
+        <a href="{% url 'customers:add_customer' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-2"></i> Add Customer
+        </a>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="input-group mb-4">
+        <input
+            type="text"
+            class="form-control"
+            placeholder="Search customers..."
+            aria-label="Search customers"
+        />
+        <button class="btn btn-outline-secondary" type="button">
+            <i class="fas fa-search"></i>
+        </button>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card shadow-sm">
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>City</th>
+                        <th>Type</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Shop</th>
+                        <th>Debt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>{{ customer.name }}</td>
+                        <td>{{ customer.city }}</td>
+                        <td>
+                            <i class="fas fa-user-tag"></i>
+                            {{ customer.get_customer_type_display }}
+                        </td>
+                        <td>{{ customer.contact }}</td>
+                        <td>{{ customer.email|default:"-" }}</td>
+                        <td>{{ customer.shop|default:"-" }}</td>
+                        <td>
+                            {% if customer.debt > 0 %}
+                            <span class="badge bg-danger">${{ customer.debt }}</span>
+                            {% else %}
+                            <span class="badge bg-success">${{ customer.debt }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No customers found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}
