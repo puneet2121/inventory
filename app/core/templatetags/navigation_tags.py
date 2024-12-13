@@ -1,6 +1,7 @@
 # core/templatetags/navigation_tags.py
 
 from django import template
+from django.urls import reverse
 
 register = template.Library()
 
@@ -12,7 +13,7 @@ def render_navigation():
         {
             'icon': 'bi bi-house-door-fill',
             'text': 'Dashboard',
-            'url': '/dashboard/',
+            'url': reverse('dashboard:dashboard'),
             'is_collapse': True,
             'submenus': []
         },
@@ -22,8 +23,8 @@ def render_navigation():
             'url': '/sales/',
             'is_collapse': True,
             'submenus': [
-                {'name': 'Customers', 'url': '/customers/'},
-                {'name': 'Sales Order', 'url': '/point_of_sale/pos'},
+                {'name': 'Customers', 'url': reverse('customers:list_customers')},
+                {'name': 'Sales Order', 'url': reverse('point_of_sale:pos_view')},
                 {'name': 'Packages', 'url': '/packages/'},
                 {'name': 'invoices', 'url': '/invoices/'},
             ]
@@ -31,10 +32,10 @@ def render_navigation():
         {
             'icon': 'bi bi-basket-fill',
             'text': 'Inventory',
-            'url': '/inventory/',
+            'url': reverse('inventory:item_list'),
             'is_collapse': True,
             'submenus': [
-                {'name': 'Items', 'url': 'item/list/'},
+                {'name': 'Items', 'url': reverse('inventory:item_list')},
                 {'name': 'Items Groups', 'url': '/orders/'},
                 {'name': 'Inventory Adjustments', 'url': '/reports/'},
             ]
