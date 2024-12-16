@@ -4,6 +4,7 @@ from crispy_forms.layout import Layout, Submit, Field
 from app.point_of_sale.models import SalesOrder, OrderItem
 from app.customers.models import Customer
 from app.inventory.models import Product
+from app.employees.models import Employee  # Import the Employee model
 
 
 class SalesOrderForm(forms.ModelForm):
@@ -26,10 +27,15 @@ class SalesOrderForm(forms.ModelForm):
         label="Other Customer (Optional)",
         widget=forms.TextInput(attrs={'placeholder': 'Enter customer name'}),
     )
+    employee = forms.ModelChoiceField(
+        queryset=Employee.objects.all(),
+        label="Employee",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
 
     class Meta:
         model = SalesOrder
-        fields = ['customer', 'product', 'quantity', 'price', 'paid_amount', 'payment_method']
+        fields = ['customer', 'product', 'quantity', 'price', 'paid_amount', 'payment_method', 'employee']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -42,10 +48,13 @@ class SalesOrderForm(forms.ModelForm):
             Field('price'),
             Field('paid_amount'),
             Field('payment_method'),
+            Field('employee'),  # Add employee selection field to the layout
             Submit('submit', 'Submit Order', css_class='btn btn-primary'),
         )
         self.fields['customer'].queryset = Customer.objects.all()
         self.fields['customer'].empty_label = "Select Customer"
+        self.fields['employee'].queryset = Employee.objects.all()
+        self.fields['employee'].empty_label = "Select Employee"
 
     def save(self, commit=True):
         """Save the sales order and create associated order items."""

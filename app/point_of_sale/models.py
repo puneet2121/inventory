@@ -1,4 +1,6 @@
 from django.db import models
+
+from app.employee.models import EmployeeProfile
 from app.inventory.models import Inventory, Product
 from app.customers.models import Customer  # Assuming you have a Customer model
 
@@ -24,6 +26,7 @@ class SalesOrder(models.Model):
     unpaid_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, null=True, blank=True)
+    employee = models.ForeignKey(EmployeeProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
 
     def calculate_totals(self):
         """Calculate total and unpaid amounts."""

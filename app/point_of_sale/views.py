@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 from .models import SalesOrder, OrderItem
 from app.inventory.models import Product
@@ -82,3 +82,10 @@ def create_sales_order(request):
     products = Product.objects.all()
     customers = Customer.objects.all()
     return render(request, 'point_of_sale/create_sales_order.html', {'products': products, 'customers': customers})
+
+
+def get_products_by_category(request, category):
+    if request.method == "GET":
+        products = Product.objects.filter(category=category).values('id', 'name', 'price')
+        return JsonResponse({'products': list(products)})
+    return JsonResponse({'error': 'Invalid request method'}, status=400)

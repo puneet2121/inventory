@@ -1,0 +1,26 @@
+<li class="nav-item">
+    {% if is_collapse %}
+        <a href="{{ url }}"
+           class="nav-link d-flex text-light align-items-center text-decoration-none"
+           data-bs-target="#collapse{{ text }}"
+           data-bs-toggle="collapse"
+           role="button"
+           aria-expanded="false"
+           aria-controls="collapse{{ text }}">
+            <i class="{{ icon }}"></i>
+            <span class="px-2">{{ text }}</span>
+        </a>
+        <div class="collapse" id="collapse{{ text }}">
+            <ul class="list-unstyled ps-5">
+                {% for submenu in submenus %}
+                  <li><a href="{{ submenu.url }}" class="text-white text-decoration-none mt-2">{{ submenu.name }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <a href="{{ url }}" class="nav-link text-light text-accent-hover">
+            <i class="{{ icon }}"></i>
+            <span class="px-2">{{ text }}</span>
+        </a>
+    {% endif %}
+</li>

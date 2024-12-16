@@ -17,8 +17,12 @@ class OrderTypeChoices(models.TextChoices):
 
 
 class CategoryTypeChoices(models.TextChoices):
-    PHONE_COVER = 'PHONE COVER', 'Phone case'
+    PHONE_COVER = 'PHONE COVER', 'Phone cover'
     SCREEN_GUARD = 'SCREEN GUARD', 'Screen guard'
+    AIRPODS = 'AIRPODS', 'Airpods'
+    AIRPOD_CASES = 'AIRPOD_CASES', 'Airpod cases'
+    CAMERA_LENS = 'CAMERA_LENS', 'Camera lens'
+    OTHER_ACCESSORIES = 'OTHER_ACCESSORIES', 'Other accessories'
 
 
 class Role(models.Model):
@@ -83,7 +87,6 @@ class Inventory(models.Model):
     location = models.CharField(max_length=100)
     quantity = models.IntegerField()
     last_updated = models.DateTimeField(auto_now=True)
-
 
     class Meta:
         db_table = 'inventory'

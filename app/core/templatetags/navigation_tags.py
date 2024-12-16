@@ -14,7 +14,7 @@ def render_navigation():
             'icon': 'bi bi-house-door-fill',
             'text': 'Dashboard',
             'url': reverse('dashboard:dashboard'),
-            'is_collapse': True,
+            'is_collapse': False,
             'submenus': []
         },
         {
@@ -49,6 +49,15 @@ def render_navigation():
                 {'name': 'Vendors', 'url': '/vendors/'},
                 {'name': 'Purchase Orders', 'url': '/purchaseorder/'},
                 {'name': 'bills', 'url': '/bills/'},
+            ]
+        },
+        {
+            'icon': 'bi bi-people',
+            'text': 'Employee',
+            'url': '/employee/',
+            'is_collapse': True,
+            'submenus': [
+                {'name': 'Employee List', 'url': reverse('employee:employee_list')},
             ]
         },
         {

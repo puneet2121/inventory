@@ -1,0 +1,15 @@
+{#{% url 'inventory:inventory' as product_url %}#}
+{#{% include 'core/navigation/elements/nav_link.html' with icon='bi bi-house-door-fill' text='Dashboard' url=product_url %}#}
+{##}
+{#{% url 'point_of_sale:bill_of_sale' as bill_of_sale_url %}#}
+{#{% include 'core/navigation/elements/nav_link.html' with icon='bi bi-bag'  text='Point of Sale' url=bill_of_sale_url %}#}
+{##}
+{#{% url 'inventory:add_product' as upload_url %}#}
+{#{% url 'inventory:item_list' as item_list_url %}#}
+{#{% include 'core/navigation/elements/nav_link.html' with icon='bi bi-basket' is_collapse=True text='Inventory' %}#}
+{##}
+{#{% url 'inventory:product_list' as product_list_url %}#}
+{#{% include 'core/navigation/elements/nav_link.html' with icon='bi bi-person' text='Employee Portal' url=product_list_url %}#}
+{##}
+{#{% url 'authentication:logout' as logout_url %}#}
+{#{% include 'core/navigation/elements/nav_link.html' with icon='bi bi-box-arrow-left' text='Logout' url=logout_url %}#}

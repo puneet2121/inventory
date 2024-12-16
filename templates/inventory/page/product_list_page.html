@@ -1,0 +1,32 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+{% block page_content %}
+    <div class="container">
+        <h1 class="mb-4">Car Inventory</h1>
+        <div class="row">
+            {% for product in products %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card mb-4 shadow hover-zoom">
+                        <img src="{{ product.image_url }}" class="card-img-top img-fluid" style="height: 270px;"
+                             alt="{{ product.title }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.title }}</h5>
+                            <p class="card-price">${{ product.price }}</p>
+                            <p class="card-text">{{ product.description }}</p>
+
+                            <div class="btn-group">
+                                <a href="{% url 'inventory:edit_product' product.id %}"
+                                   class="btn btn-sm btn-outline-dark">Edit</a>
+                                <form action="{% url 'inventory:delete_product' product.id %}" method="post"
+                                      class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-dark ml-2">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

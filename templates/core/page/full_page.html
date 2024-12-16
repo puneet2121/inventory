@@ -1,0 +1,30 @@
+{% extends 'core/page/base_page.html' %}
+{% load static %}
+{% load navigation_tags %}
+
+{% block base_page_content %}
+    <div class="row">
+          <div class="col-lg-2 col-md-4 d-none d-lg-block bg-dark text-white p-3"
+        style="height: 100vh; position: sticky; top: 0; overflow-y: auto;"
+       tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
+                {% block navigation_side %}
+                    {% render_navigation %}
+                {% endblock %}
+        </div>
+
+
+        <div class="col">
+            <div>
+                <div class="row sticky-top">
+                    <div class="col-12 p-0">
+                        <div class="d-lg-none text-end">
+                            {% include 'core/navigation/mobile_navigation.html' %}
+                        </div>
+                    </div>
+                </div>
+                {% block page_content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

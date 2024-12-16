@@ -112,6 +112,14 @@
                     </div>
                 </div>
             </div>
+                <div class="mb-3">
+            <label for="employee" class="form-label">Select Employee</label>
+            <select name="employee" id="employee" class="form-select">
+                {% for employee in employees %}
+                    <option value="{{ employee.id }}">{{ employee.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
             <button type="submit" class="btn btn-primary w-100">Submit Order</button>
         </div>
