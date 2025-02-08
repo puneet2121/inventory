@@ -1,0 +1,221 @@
+{% extends 'core/page/full_page.html' %}
+
+{% block page_content %}
+<div class="container mt-3" x-data="quickCheckout()">
+    <h2 class="mb-4">Quick Checkout</h2>
+    
+    <!-- Barcode Scanner Section -->
+    <div class="mb-4">
+        <button class="btn btn-primary btn-lg w-100 mb-2" @click="startScanner">
+            Open Barcode Scanner
+        </button>
+        <div id="barcode-scanner" class="d-none">
+            <div id="interactive" class="viewport"></div>
+            <button class="btn btn-danger btn-lg w-100 mt-2" @click="stopScanner">
+                Close Scanner
+            </button>
+        </div>
+    </div>
+
+    <!-- Barcode Input (Manual Entry) -->
+    <div class="mb-4">
+        <input type="text" 
+               class="form-control form-control-lg" 
+               placeholder="Scan Barcode or Enter Manually"
+               x-model="barcode"
+               @keyup.enter="addItem"
+               autofocus>
+    </div>
+
+    <!-- Quantity Input -->
+    <div class="row mb-4" x-show="currentProduct">
+        <div class="col-12">
+            <input type="number" 
+                   class="form-control form-control-lg" 
+                   placeholder="Enter Quantity"
+                   x-model="quantity"
+                   min="1"
+                   value="1"
+                   @keyup.enter="addToCart">
+            <button class="btn btn-success btn-lg w-100 mt-2" @click="addToCart">
+                Add to Cart
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Items -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <template x-for="(item, index) in cart" :key="index">
+                <div class="row align-items-center mb-2">
+                    <div class="col-5">
+                        <span x-text="item.product.name"></span>
+                    </div>
+                    <div class="col-3">
+                        <input type="number" 
+                               class="form-control"
+                               x-model="item.quantity"
+                               min="1"
+                               @change="updateTotal">
+                    </div>
+                    <div class="col-3">
+                        $<span x-text="(item.product.price * item.quantity).toFixed(2)"></span>
+                    </div>
+                    <div class="col-1">
+                        <button class="btn btn-danger btn-sm" 
+                                @click="removeItem(index)">
+                            X
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Checkout Section -->
+    <div class="fixed-bottom bg-white p-3 border-top">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3>Total: $<span x-text="total.toFixed(2)"></span></h3>
+            <form method="post" @submit.prevent="checkout">
+                {% csrf_token %}
+                <input type="hidden" name="cart_data" :value="JSON.stringify(cart)">
+                <select name="payment_status" class="form-select me-2" required>
+                    <option value="paid">Paid Now</option>
+                    <option value="unpaid">Pay Later</option>
+                </select>
+                <button type="submit" class="btn btn-success btn-lg">
+                    Complete Checkout
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Include QuaggaJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
+<script>
+function quickCheckout() {
+    return {
+        barcode: '',
+        quantity: 1,
+        currentProduct: null,
+        cart: [],
+        total: 0,
+
+        async addItem() {
+            if (!this.barcode) return;
+            
+            try {
+                const response = await fetch(`/point_of_sale/api/products/${this.barcode}/`);
+                const product = await response.json();
+                this.currentProduct = product;
+                this.quantity = 1;  // Reset quantity
+            } catch (error) {
+                alert('Product not found!');
+                this.barcode = '';
+            }
+        },
+
+        addToCart() {
+            if (!this.currentProduct || this.quantity < 1) return;
+            
+            const existingItem = this.cart.find(item => 
+                item.product.id === this.currentProduct.id
+            );
+
+            if (existingItem) {
+                existingItem.quantity += parseInt(this.quantity);
+            } else {
+                this.cart.push({
+                    product: this.currentProduct,
+                    quantity: parseInt(this.quantity)
+                });
+            }
+
+            this.barcode = '';
+            this.currentProduct = null;
+            this.updateTotal();
+        },
+
+        removeItem(index) {
+            this.cart.splice(index, 1);
+            this.updateTotal();
+        },
+
+        updateTotal() {
+            this.total = this.cart.reduce((sum, item) => 
+                sum + (item.product.price * item.quantity), 0
+            );
+        },
+
+        checkout() {
+            if (this.cart.length === 0) {
+                alert('Please add items to cart!');
+                return;
+            }
+            this.$el.submit();
+        },
+
+        startScanner() {
+            const scannerDiv = document.getElementById('barcode-scanner');
+            scannerDiv.classList.remove('d-none');
+
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#interactive'),
+                    constraints: {
+                        width: 640,
+                        height: 480,
+                        facingMode: "environment" // Use rear camera
+                    },
+                },
+                decoder: {
+                    readers: ["ean_reader", "upc_reader"] // Supported barcode formats
+                }
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert('Failed to initialize scanner. Please try again.');
+                    return;
+                }
+                Quagga.start();
+            });
+
+            Quagga.onDetected((data) => {
+                this.barcode = data.codeResult.code;
+                this.addItem();
+                this.stopScanner();
+            });
+        },
+
+        stopScanner() {
+            Quagga.stop();
+            const scannerDiv = document.getElementById('barcode-scanner');
+            scannerDiv.classList.add('d-none');
+        }
+    }
+}
+</script>
+
+<style>
+#interactive {
+    width: 100%;
+    height: 300px;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+}
+
+.viewport {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+</style>
+{% endblock %}

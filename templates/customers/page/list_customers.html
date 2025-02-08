@@ -52,9 +52,9 @@
                         <td>{{ customer.shop|default:"-" }}</td>
                         <td>
                             {% if customer.debt > 0 %}
-                            <span class="badge bg-danger">${{ customer.debt }}</span>
+                            <span class="badge bg-danger">${{ customer.total_debt }}</span>
                             {% else %}
-                            <span class="badge bg-success">${{ customer.debt }}</span>
+                            <span class="badge bg-success">${{ customer.total_debt }}</span>
                             {% endif %}
                         </td>
                     </tr>

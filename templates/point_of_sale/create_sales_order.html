@@ -1,219 +1,293 @@
+{#{% extends 'core/page/full_page.html' %}#}
+{#{% block page_content %}#}
+{#<div class="container mt-5" x-data="salesOrder()">#}
+{#<form method="post">#}
+{#{% csrf_token %}#}
+{#        <h2 class="mb-4">Point of Sale (POS) - Sales Order</h2>#}
+{##}
+{#        <!-- Walk-in or Existing Customer -->#}
+{#        <div class="card mb-4">#}
+{#            <div class="card-header">Customer Information</div>#}
+{#            <div class="card-body">#}
+{#                <div class="form-check form-check-inline">#}
+{#                    <input class="form-check-input" type="radio" id="walkInCustomer" value="walk-in" x-model="customerType">#}
+{#                    <label class="form-check-label" for="walkInCustomer">Walk-in Customer</label>#}
+{#                </div>#}
+{#                <div class="form-check form-check-inline">#}
+{#                    <input class="form-check-input" type="radio" id="existingCustomer" value="existing" x-model="customerType">#}
+{#                    <label class="form-check-label" for="existingCustomer">Existing Customer</label>#}
+{#                </div>#}
+{##}
+{#                <div x-show="customerType === 'existing'" class="mt-3">#}
+{#                    <label for="customerSelect" class="form-label">Select Customer</label>#}
+{#                    <select class="form-select" id="customerSelect" x-model="customer" required>#}
+{#                        <option value="">-- Choose Customer --</option>#}
+{#                        {% for customer in customers %}#}
+{#                            <option value="{{ customer.id }}">{{ customer.name }}</option>#}
+{#                        {% endfor %}#}
+{#                    </select>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Employee Section -->#}
+{#        <div class="card mb-4">#}
+{#            <div class="card-header">Employee Details</div>#}
+{#            <div class="card-body">#}
+{#                <div class="row">#}
+{#                    <div class="col-md-6">#}
+{#                        <label class="form-label">Employee</label>#}
+{#                        <select class="form-select" x-model="selectedEmployee">#}
+{#                            <option value="{{ request.user.id }}" selected>{{ request.user.username }} (Logged In)</option>#}
+{#                            {% for employee in employees %}#}
+{#                                {% if employee.id != request.user.id %}#}
+{#                                    <option value="{{ employee.id }}">{{ employee.name }}</option>#}
+{#                                {% endif %}#}
+{#                            {% endfor %}#}
+{#                        </select>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Add Products Section -->#}
+{#        <div class="card mb-4">#}
+{#            <div class="card-header">Add Products</div>#}
+{#            <div class="card-body">#}
+{#                <div class="row mb-3">#}
+{#                    <div class="col-md-4">#}
+{#                        <label class="form-label">Select Product</label>#}
+{#                        <select class="form-select" x-model="newItem.product" @change="updateProductPrice">#}
+{#                            <option value="">-- Choose Product --</option>#}
+{#                            <option value="custom">Add Custom Product</option>#}
+{#                            {% for product in products %}#}
+{#                                <option value="{{ product.id }}" x-bind:data-price="{{ product.price }}">#}
+{#                                    {{ product.name }}#}
+{#                                </option>#}
+{#                            {% endfor %}#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="col-md-2">#}
+{#                        <label class="form-label">Price</label>#}
+{#                        <input type="number" class="form-control" x-model.number="newItem.price" placeholder="0.00">#}
+{#                    </div>#}
+{#                    <div class="col-md-2">#}
+{#                        <label class="form-label">Quantity</label>#}
+{#                        <input type="number" class="form-control" x-model.number="newItem.quantity" min="1" placeholder="1">#}
+{#                    </div>#}
+{#                    <div class="col-md-2 d-flex align-items-end">#}
+{#                        <button class="btn btn-success" @click="addProduct">Add Product</button>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <!-- Product Table -->#}
+{#                <table class="table table-bordered">#}
+{#                    <thead>#}
+{#                        <tr>#}
+{#                            <th>Product</th>#}
+{#                            <th>Price</th>#}
+{#                            <th>Quantity</th>#}
+{#                            <th>Total</th>#}
+{#                            <th>Action</th>#}
+{#                        </tr>#}
+{#                    </thead>#}
+{#                    <tbody>#}
+{#                        <template x-for="(item, index) in items" :key="index">#}
+{#                            <tr>#}
+{#                                <td x-text="item.name"></td>#}
+{#                                <td x-text="item.price.toFixed(2)"></td>#}
+{#                                <td x-text="item.quantity"></td>#}
+{#                                <td x-text="(item.price * item.quantity).toFixed(2)"></td>#}
+{#                                <td>#}
+{#                                    <button class="btn btn-danger btn-sm" @click="removeProduct(index)">Remove</button>#}
+{#                                </td>#}
+{#                            </tr>#}
+{#                        </template>#}
+{#                    </tbody>#}
+{#                </table>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Payment Status -->#}
+{#        <div class="card mb-4">#}
+{#            <div class="card-header">Payment Status</div>#}
+{#            <div class="card-body">#}
+{#                <div class="row">#}
+{#                    <div class="col-md-4">#}
+{#                        <label class="form-label">Payment Status</label>#}
+{#                        <select class="form-select" x-model="paymentStatus">#}
+{#                            <option value="paid">Paid</option>#}
+{#                            <option value="partial">Partial Paid</option>#}
+{#                            <option value="unpaid">Unpaid</option>#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="col-md-4">#}
+{#                        <label class="form-label">Amount Paid</label>#}
+{#                        <input type="number" class="form-control" x-model.number="amountPaid" x-bind:disabled="paymentStatus === 'unpaid'" placeholder="0.00">#}
+{#                    </div>#}
+{#                </div>#}
+{#                <template x-if="paymentStatus === 'unpaid'">#}
+{#                    <div class="mt-3">#}
+{#                        <label for="debtAmount" class="form-label">Debt Amount</label>#}
+{#                        <input type="number" class="form-control" x-model.number="debtAmount" readonly>#}
+{#                    </div>#}
+{#                </template>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- Final Calculations -->#}
+{#        <div class="card mb-4">#}
+{#            <div class="card-header">Total</div>#}
+{#            <div class="card-body">#}
+{#                <div class="row">#}
+{#                    <div class="col-md-6">#}
+{#                        <label class="form-label">Subtotal</label>#}
+{#                        <input type="text" class="form-control" x-model="subtotal" readonly>#}
+{#                    </div>#}
+{#                    <div class="col-md-6">#}
+{#                        <label class="form-label">Total Amount</label>#}
+{#                        <input type="text" class="form-control" x-model="totalAmount" readonly>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <div class="d-flex justify-content-end">#}
+{#            <button class="btn btn-primary" type="submit">Save Order</button>#}
+{#        </div>#}
+{#</form>#}
+{#    </div>#}
+{##}
+{#    <script>#}
+{#        function salesOrder() {#}
+{#            return {#}
+{#                customerType: 'walk-in',#}
+{#                customer: null,#}
+{#                selectedEmployee: '{{ request.user.id }}',#}
+{#                newItem: {#}
+{#                    product: '',#}
+{#                    price: 0,#}
+{#                    quantity: 1,#}
+{#                },#}
+{#                items: [],#}
+{#                discount: 0,#}
+{#                tax: 0,#}
+{#                paymentStatus: 'paid',#}
+{#                amountPaid: 0,#}
+{#                debtAmount: 0,#}
+{#                subtotal: 0,#}
+{#                totalAmount: 0,#}
+{##}
+{#                addProduct() {#}
+{#                    const selectedProduct = document.querySelector(`#productSelect option[value="${this.newItem.product}"]`);#}
+{#                    const productName = selectedProduct ? selectedProduct.textContent : 'Custom Product';#}
+{#                    const price = this.newItem.price || parseFloat(selectedProduct.getAttribute('data-price'));#}
+{##}
+{#                    this.items.push({#}
+{#                        name: productName,#}
+{#                        price: price,#}
+{#                        quantity: this.newItem.quantity,#}
+{#                    });#}
+{#                    this.calculateTotals();#}
+{#                },#}
+{##}
+{#                removeProduct(index) {#}
+{#                    this.items.splice(index, 1);#}
+{#                    this.calculateTotals();#}
+{#                },#}
+{##}
+{#                updateProductPrice() {#}
+{#                    const selectedProduct = document.querySelector(`#productSelect option[value="${this.newItem.product}"]`);#}
+{#                    if (selectedProduct && selectedProduct.hasAttribute('data-price')) {#}
+{#                        this.newItem.price = parseFloat(selectedProduct.getAttribute('data-price'));#}
+{#                    }#}
+{#                },#}
+{##}
+{#                calculateTotals() {#}
+{#                    let subtotal = 0;#}
+{#                    this.items.forEach(item => {#}
+{#                        subtotal += item.price * item.quantity;#}
+{#                    });#}
+{##}
+{#                    const discountAmount = (subtotal * this.discount) / 100;#}
+{#                    const taxAmount = (subtotal * this.tax) / 100;#}
+{##}
+{#                    this.subtotal = subtotal;#}
+{#                    this.totalAmount = subtotal - discountAmount + taxAmount;#}
+{##}
+{#                    if (this.paymentStatus === 'unpaid') {#}
+{#                        this.debtAmount = this.totalAmount;#}
+{#                    } else {#}
+{#                        this.debtAmount = 0;#}
+{#                    }#}
+{#                },#}
+{##}
+{#            }#}
+{#        }#}
+{#    </script>#}
+{#{% endblock %}#}
+
+
 {% extends 'core/page/full_page.html' %}
-{% load crispy_forms_tags %}
-
 {% block page_content %}
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Point of Sale</h2>
+<h2>Create Sales Order</h2>
+<form method="POST">
+    {% csrf_token %}
 
-    <form method="post">
-        {% csrf_token %}
-        <div x-data="posPage()" class="needs-validation">
-            <!-- Customer Information -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Customer Information</h4>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="customer" class="form-label">Select Customer</label>
-                        <select x-model="selectedCustomer" @change="fetchCustomerPrices()" name="customer" id="customer" class="form-select">
-                            <option value="">Walk-in Customer</option>
-                            {% for customer in customers %}
-                                <option value="{{ customer.id }}">{{ customer.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+    <!-- Sales Order Form -->
+    <h3>Sales Order Details</h3>
+    {{ form.as_p }}
 
-                    <div class="mb-3" x-show="selectedCustomer === ''">
-                        <label for="customer_name" class="form-label">Other Customer (Optional)</label>
-                        <input x-model="customerName" type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Enter customer name">
-                    </div>
+    <!-- Order Items Formset -->
+    <h3>Order Items</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Rate</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ formset.management_form }}
+            {% for form in formset %}
+            <tr>
+                <td>{{ form.item_name }}</td>
+                <td>{{ form.quantity }}</td>
+                <td>{{ form.rate }}</td>
+                <td><span class="amount">0.00</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-                    <div class="mb-3" x-show="selectedCustomer">
-                        <label class="form-label">Total Debt</label>
-                        <input type="number" class="form-control" readonly :value="selectedCustomerDebt">
-                    </div>
-                </div>
-            </div>
+    <button type="button" onclick="addRow()">Add More Items</button>
+    <button type="submit">Save Sales Order</button>
+</form>
 
-            <!-- Product Selection -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h4 class="mb-0">Products</h4>
-                </div>
-                <div class="card-body">
-                    <template x-for="(product, index) in products" :key="index">
-                        <div class="row g-3 align-items-end mb-4">
-                            <div class="col-md-4">
-                                <label class="form-label">Product Type</label>
-                                <select :name="'product[' + index + '][type]'" x-model="product.type" class="form-select">
-                                    <option value="inventory">Inventory Product</option>
-                                    <option value="custom">Custom Product</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4" x-show="product.type === 'inventory'">
-                                <label class="form-label">Select Product</label>
-                                <select :name="'product[' + index + '][id]'" x-model="product.id" @change="updatePrice(index)" class="form-select">
-                                    <option value="">-- Select Product --</option>
-                                    {% for product in products %}
-                                        <option value="{{ product.id }}">{{ product.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-4" x-show="product.type === 'custom'">
-                                <label class="form-label">Custom Product Name</label>
-                                <input :name="'product[' + index + '][custom_name]'" x-model="product.customName" type="text" class="form-control" placeholder="Enter custom product name">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Quantity</label>
-                                <input :name="'product[' + index + '][quantity]'" x-model="product.quantity" type="number" class="form-control" min="1">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Price</label>
-                                <input :name="'product[' + index + '][price]'" x-model="product.price" type="number" class="form-control" min="0" step="0.01">
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" @click="removeProduct(index)" class="btn btn-danger w-100">Remove</button>
-                            </div>
-                        </div>
-                    </template>
-                    <button type="button" @click="addProduct" class="btn btn-outline-secondary">Add Product</button>
-                </div>
-            </div>
-
-            <!-- Payment Information -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0">Payment</h4>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="payment_status" class="form-label">Payment Status</label>
-                        <select x-model="paymentStatus" class="form-select" id="payment_status" name="payment_status">
-                            <option value="unpaid">Unpaid</option>
-                            <option value="partial">Partial Paid</option>
-                            <option value="paid">Paid</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3" x-show="paymentStatus !== 'paid'">
-                        <label for="paid_amount" class="form-label">Paid Amount</label>
-                        <input x-model="paidAmount" type="number" class="form-control" id="paid_amount" name="paid_amount" min="0" step="0.01">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Total Price</label>
-                        <input type="number" class="form-control" readonly :value="calculateTotalPrice()">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Remaining Debt</label>
-                        <input type="number" class="form-control" readonly :value="calculateRemainingDebt()">
-                    </div>
-                </div>
-            </div>
-                <div class="mb-3">
-            <label for="employee" class="form-label">Select Employee</label>
-            <select name="employee" id="employee" class="form-select">
-                {% for employee in employees %}
-                    <option value="{{ employee.id }}">{{ employee.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-            <button type="submit" class="btn btn-primary w-100">Submit Order</button>
-        </div>
-    </form>
-</div>
-
-
-
-
-
+<!-- JS for Adding Rows Dynamically -->
 <script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('posPage', () => ({
-            selectedCustomer: '',
-            customerName: '',
-            selectedCustomerDebt: 0,
-            products: [],
-            paymentStatus: 'unpaid',
-            paidAmount: 0,
-            productPrices: {},
+    function addRow() {
+        const formsetPrefix = "{{ formset.prefix }}";
+        const table = document.querySelector("tbody");
+        const rowCount = table.querySelectorAll("tr").length;
+        const emptyForm = `{{ formset.empty_form|escapejs }}`;
 
-            addProduct() {
-                this.products.push({
-                    type: 'inventory',
-                    id: '',
-                    customName: '',
-                    quantity: 1,
-                    price: 0
-                });
-            },
-            removeProduct(index) {
-                this.products.splice(index, 1);
-            },
-            fetchCustomerPrices() {
-            if (this.selectedCustomer) {
-                // Fetch prices for a specific customer
-                fetch(`/point_of_sale/get_customer_price/${this.selectedCustomer}/`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Error fetching customer prices');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (!data.error) {
-                            this.productPrices = data;
-                            this.products.forEach(product => {
-                                if (product.id) {
-                                    // Set customer-specific prices or default to 0
-                                    product.price = this.productPrices[product.id] || 0;
-                                }
-                            });
-                        }
-                    })
-                    .catch(error => console.error('Error fetching prices for customer:', error));
-            } else {
-                // Fetch prices for walk-in customers (regular price)
-                this.products.forEach(product => {
-                    if (product.id) {
-                        fetch(`/point_of_sale/get_product_price/${product.id}/`)
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error(`Error fetching price for product ${product.id}`);
-                                }
-                                return response.json();
-                            })
-                            .then(data => {
-                                // Update the product price
-                                product.price = data.price || 0;
-                            })
-                            .catch(error => {
-                                console.error(`Error fetching price for product ${product.id}:`, error);
-                            });
-                    }
-                });
-            }
-            },
+        // Replace '__prefix__' with the new form index
+        const newRow = emptyForm.replace(/__prefix__/g, rowCount);
+        table.insertAdjacentHTML('beforeend', newRow);
+    }
 
-            updatePrice(index) {
-                const productId = this.products[index].id;
-                if (productId && this.productPrices[productId]) {
-                    this.products[index].price = this.productPrices[productId];
-                }
-            },
-            calculateTotalPrice() {
-                return this.products.reduce((total, product) => {
-                    return total + (product.quantity * product.price);
-                }, 0);
-            },
-            calculateRemainingDebt() {
-                return this.calculateTotalPrice() - this.paidAmount;
-            },
-        }));0
+    // Update amount dynamically based on quantity and rate
+    document.addEventListener('input', function (e) {
+        if (e.target.name.includes('quantity') || e.target.name.includes('rate')) {
+            const row = e.target.closest('tr');
+            const quantity = row.querySelector('input[name*="quantity"]').value;
+            const rate = row.querySelector('input[name*="rate"]').value;
+            const amount = parseFloat(quantity) * parseFloat(rate) || 0.00;
+            row.querySelector('.amount').innerText = amount.toFixed(2);
+        }
     });
 </script>
-
 {% endblock %}

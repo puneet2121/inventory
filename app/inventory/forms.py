@@ -45,7 +45,7 @@ class ProductForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['image_url', 'barcode']
+        exclude = ['image_url']
 
 
 class InventoryForm(forms.ModelForm):

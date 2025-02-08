@@ -1,91 +1,195 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.db import transaction
-from .models import SalesOrder, OrderItem
-from app.inventory.models import Product
-from app.customers.models import Customer
+import json
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.forms import inlineformset_factory
 from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.views.decorators.http import require_http_methods
+
+from .models import SalesOrder, OrderItem, Invoice, Payment, EmployeeProfile
+from .forms import SalesOrderForm, OrderItemForm
+from django.db import transaction
+
+from ..customers.models import Customer
+from ..inventory.models import Product
 
 
-def get_customer_price(request, customer_id):
-    try:
-        customer = Customer.objects.get(id=customer_id)
-        price_list = {}
-        products = Product.objects.all()
-        if customer.customer_type == 'A':
-            for product in products:
-                price_list[product.id] = product.price_A
-        elif customer.customer_type == 'B':
-            for product in products:
-                price_list[product.id] = product.price_B
-        else:
-            for product in products:
-                price_list[product.id] = product.price
-        print(price_list)
-        return JsonResponse(price_list)
-    except Customer.DoesNotExist:
-        return JsonResponse({'error': 'Customer not found'}, status=404)
-
-
-def get_product_price(request, product_id):
-    product = Product.objects.get(id=product_id)
-    product_price = product.price
-    print(product_price)
-    return JsonResponse({'product_id': product.id, 'price': product_price})
-
-
+# Sales Order Views
+@login_required(login_url='/authentication/login/')
 def create_sales_order(request):
-    if request.method == 'POST':
-        customer_name = request.POST.get('customer_name', 'Walk-in Customer')
-        customer_id = request.POST.get('customer')
-        payment_status = request.POST.get('payment_status', 'unpaid')
-        paid_amount = float(request.POST.get('paid_amount', 0))
-        products = zip(
-            request.POST.getlist('product_type'),
-            request.POST.getlist('product'),
-            request.POST.getlist('custom_product_name'),
-            request.POST.getlist('quantity'),
-            request.POST.getlist('price')
-        )
+    OrderItemFormSet = inlineformset_factory(
+        SalesOrder, OrderItem, form=OrderItemForm, extra=1, can_delete=True
+    )
+    products = Product.objects.all()  # Fetch products to pass to the template
+    customers = Customer.objects.all()
+    employees = EmployeeProfile.objects.all()
 
+    if request.method == "POST":
+        sales_order_form = SalesOrderForm(request.POST)
+        formset = OrderItemFormSet(request.POST, prefix="items")
+
+        if sales_order_form.is_valid() and formset.is_valid():
+            try:
+                with transaction.atomic():
+                    sales_order = sales_order_form.save()
+                    order_items = formset.save(commit=False)
+                    for item in order_items:
+                        item.sales_order = sales_order
+                        item.save()
+
+                    # Save any remaining deleted forms from the formset
+                    formset.save_m2m()
+
+                    # invoice = Invoice.objects.create(
+                    #     sales_order=sales_order,
+                    #     is_paid=(sales_order.payment_status == 'paid')
+                    # )
+                    #
+                    # # If payment is marked as paid, create a Payment record
+                    # if sales_order.payment_status == 'paid':
+                    #     Payment.objects.create(
+                    #         invoice=invoice,
+                    #         payment_method='cash'  # Default payment method, can be dynamic
+                    #     )
+
+                    return redirect('point_of_sale:create_sales_order')
+            except Exception as e:
+                formset.non_form_errors = [str(e)]  # Add error to non-form errors
+        else:
+            if not sales_order_form.is_valid():
+                sales_order_form.add_error(None, "Sales order form is invalid.")
+            if not formset.is_valid():
+                for form in formset:
+                    if not form.is_valid():
+                        form.add_error(None, "Order item form is invalid.")
+    else:
+        sales_order_form = SalesOrderForm()
+        formset = OrderItemFormSet(prefix="items")
+
+    return render(request, 'point_of_sale/sales_order_form.html', {
+        'sales_order_form': sales_order_form,
+        'formset': formset,
+        'products': products,  # Pass products to the template
+        'customers': customers,
+        'employees': employees
+    })
+
+
+def add_order_items(request, sales_order_id):
+    sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
+    if request.method == 'POST':
+        form = OrderItemForm(request.POST)
+        if form.is_valid():
+            order_item = form.save(commit=False)
+            order_item.sales_order = sales_order
+            order_item.save()
+            return redirect('add_order_items', sales_order.id)
+    else:
+        form = OrderItemForm()
+    return render(request, 'point_of_sale/sales_order_detail.html', {'sales_order': sales_order, 'form': form})
+
+
+def convert_to_invoice(request, sales_order_id):
+    sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
+    if not hasattr(sales_order, 'invoice'):
+        Invoice.objects.create(sales_order=sales_order, invoice_id=f"INV-{sales_order.id}")
+    return redirect('invoice_list')
+
+
+# Invoice Views
+def invoice_list(request):
+    invoices = Invoice.objects.all()
+    return render(request, 'point_of_sale/invoice_list.html', {'invoices': invoices})
+
+
+def invoice_detail(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    return render(request, 'point_of_sale/invoice_detail.html', {'invoice': invoice})
+
+
+# Payment Views
+def add_payment(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    if request.method == 'POST':
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            payment.invoice = invoice
+            payment.save()
+            return redirect('invoice_detail', invoice_id)
+    else:
+        form = PaymentForm()
+    return render(request, 'point_of_sale/payment_form.html', {'invoice': invoice, 'form': form})
+
+
+def product_by_barcode(request, barcode):
+    print('jijijji')
+    try:
+        product = Product.objects.get(barcode=barcode)
+        print('jee')
+        return JsonResponse({
+            'id': product.id,
+            'name': product.name,
+            'price': float(product.price),
+            'barcode': product.barcode
+        })
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+
+
+@require_http_methods(["GET", "POST"])
+@login_required(login_url='/authentication/login/')
+def quick_checkout(request):
+    if request.method == 'POST':
         try:
             with transaction.atomic():
+                customer, _ = Customer.objects.get_or_create(
+                    name="Walk-In",
+                    customer_type='C'
+                )
+                print('this is the req id', request.user.id)
+                # Create sales order
                 sales_order = SalesOrder.objects.create(
-                    customer_name=customer_name,
-                    payment_status=payment_status,
-                    paid_amount=paid_amount,
+                    customer=customer,
+                    employee=request.user.employee_profile
                 )
 
-                for product_type, product_id, custom_name, quantity, price in products:
-                    if product_type == 'inventory' and product_id:
-                        product = Product.objects.get(id=product_id)
-                        OrderItem.objects.create(
-                            sales_order=sales_order,
-                            product=product,
-                            quantity=int(quantity),
-                            price=float(price),
-                        )
-                    elif product_type == 'custom':
-                        OrderItem.objects.create(
-                            sales_order=sales_order,
-                            product_name=custom_name,
-                            quantity=int(quantity),
-                            price=float(price),
-                        )
+                # Add order items
+                cart_data = json.loads(request.POST.get('cart_data', '[]'))
+                for item in cart_data:
+                    product = Product.objects.get(id=item['product']['id'])
+                    OrderItem.objects.create(
+                        sales_order=sales_order,
+                        product=product,
+                        quantity=item['quantity'],
+                        price=product.price
+                    )
 
-                sales_order.calculate_total_price()
+                # Create invoice
+                total_amount = sum(
+                    item['product']['price'] * item['quantity']
+                    for item in cart_data
+                )
 
-            return redirect('sales_order_success', order_id=sales_order.id)
+                invoice = Invoice.objects.create(
+                    sales_order=sales_order,
+                    total_amount=total_amount,
+                    is_paid=(request.POST.get('payment_status') == 'paid')
+                )
+
+                # # Create payment if paid
+                # if invoice.is_paid:
+                #     Payment.objects.create(
+                #         invoice=invoice,
+                #         amount=total_amount,
+                #         payment_method='cash'
+                #     )
+
+                return redirect('point_of_sale:create_sales_order')
 
         except Exception as e:
-            return render(request, 'point_of_sale/create_sales_order.html', {'error': str(e)})
+            return render(request, 'error.html', {'error': str(e)})
 
-    products = Product.objects.all()
-    customers = Customer.objects.all()
-    return render(request, 'point_of_sale/create_sales_order.html', {'products': products, 'customers': customers})
-
-
-def get_products_by_category(request, category):
-    if request.method == "GET":
-        products = Product.objects.filter(category=category).values('id', 'name', 'price')
-        return JsonResponse({'products': list(products)})
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
+    return render(request, 'point_of_sale/quick_checkout.html')
