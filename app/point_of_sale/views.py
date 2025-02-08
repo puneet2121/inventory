@@ -149,7 +149,6 @@ def quick_checkout(request):
                     name="Walk-In",
                     customer_type='C'
                 )
-                print('this is the req id', request.user.id)
                 # Create sales order
                 sales_order = SalesOrder.objects.create(
                     customer=customer,
@@ -175,7 +174,6 @@ def quick_checkout(request):
 
                 invoice = Invoice.objects.create(
                     sales_order=sales_order,
-                    total_amount=total_amount,
                     is_paid=(request.POST.get('payment_status') == 'paid')
                 )
 
