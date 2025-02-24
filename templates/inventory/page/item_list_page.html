@@ -282,7 +282,7 @@
                     </td>
                     <td>{{ product.category }}</td>
                     <td>${{ product.price|floatformat:2 }}</td>
-                    <td>
+     a               <td>
                         <span class="stock-badge {% if product.stock <= 5 %}low{% endif %}">  <!-- Changed condition -->
                             {{ product.stock }}
                         </span>
