@@ -1,0 +1,49 @@
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filter Items</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="filterForm">
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" x-model="filters.category">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Price Range</label>
+                        <div class="row g-2">
+                            <div class="col">
+                                <input type="number" class="form-control" placeholder="Min" x-model="filters.minPrice">
+                            </div>
+                            <div class="col">
+                                <input type="number" class="form-control" placeholder="Max" x-model="filters.maxPrice">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Stock Status</label>
+                        <select class="form-select" x-model="filters.stock">
+                            <option value="all">All Items</option>
+                            <option value="in_stock">In Stock</option>
+                            <option value="low_stock">Low Stock</option>
+                            <option value="out_of_stock">Out of Stock</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" @click="applyFilters">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>

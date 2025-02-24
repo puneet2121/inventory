@@ -1,20 +1,237 @@
+{#{% extends 'core/page/full_page.html' %}#}
+{#{% load crispy_forms_filters %}#}
+{#{% load crispy_forms_tags %}#}
+{##}
+{#{% block page_content %}#}
+{#    {% block content %}#}
+{#        <h1>Create Product</h1>#}
+{#        <form id="product-form" class="mb-3" method="post" enctype="multipart/form-data">#}
+{#            {% csrf_token %}#}
+{##}
+{#            {{ product_form|crispy }}#}
+{##}
+{#            {{ inventory_form|crispy }}#}
+{##}
+{#            <!-- Submit Buttons -->#}
+{#            <button type="submit" class="btn btn-primary" name="submit" value="submit">Submit</button>#}
+{##}
+{#        </form>#}
+{#    {% endblock %}#}
+{#{% endblock %}#}
+
 {% extends 'core/page/full_page.html' %}
-{% load crispy_forms_filters %}
-{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Add Product{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product-form.css' %}">
+{% endblock %}
 
 {% block page_content %}
-    {% block content %}
-        <h1>Create Product</h1>
-        <form id="product-form" class="mb-3" method="post" enctype="multipart/form-data">
+<div class="product-form-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h4>Add New Product</h4>
+            <p class="text-muted">Create a new product in your inventory</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'inventory:item_list' %}" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i>
+                <span class="d-none d-md-inline">Back to List</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card">
+        <form method="post" enctype="multipart/form-data" class="product-form">
             {% csrf_token %}
 
-            {{ product_form|crispy }}
+            <!-- Image Upload Section -->
+            <div class="image-upload-section">
+                <div class="upload-preview" id="imagePreview">
+                    <img src="{% static 'images/placeholder.png' %}" alt="Product Preview" id="previewImage">
+                    <div class="upload-overlay">
+                        <i class="bi bi-cloud-upload"></i>
+                        <span>Click or drag image to upload</span>
+                    </div>
+                </div>
+                <input type="file" name="image" id="imageInput" class="hidden-file-input" accept="image/*">
+            </div>
 
-            {{ inventory_form|crispy }}
+            <div class="form-grid">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h5 class="section-title">Basic Information</h5>
 
-            <!-- Submit Buttons -->
-            <button type="submit" class="btn btn-primary" name="submit" value="submit">Submit</button>
+                    <div class="form-group">
+                        <label for="name" class="form-label">Product Name*</label>
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                               value="{{ form.name.value|default:'' }}"
+                               required>
+                        {% if form.name.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.name.errors|join:", " }}
+                        </div>
+                        {% endif %}
+                    </div>
 
+                    <div class="form-group">
+                        <label for="sku" class="form-label">SKU</label>
+                        <input type="text"
+                               id="sku"
+                               name="sku"
+                               class="form-control {% if form.sku.errors %}is-invalid{% endif %}"
+                               value="{{ form.sku.value|default:'' }}">
+                        {% if form.sku.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.sku.errors|join:", " }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category" class="form-label">Category*</label>
+                        <select id="category"
+                                name="category"
+                                class="form-select {% if form.category.errors %}is-invalid{% endif %}"
+                                required>
+                            <option value="">Select Category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}"
+                                    {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.category.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.category.errors|join:", " }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Pricing & Stock -->
+                <div class="form-section">
+                    <h5 class="section-title">Pricing & Stock</h5>
+
+                    <div class="form-group">
+                        <label for="price" class="form-label">Price*</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number"
+                                   id="price"
+                                   name="price"
+                                   class="form-control {% if form.price.errors %}is-invalid{% endif %}"
+                                   value="{{ form.price.value|default:'' }}"
+                                   step="0.01"
+                                   required>
+                            {% if form.price.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.price.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stock" class="form-label">Initial Stock*</label>
+                        <input type="number"
+                               id="stock"
+                               name="stock"
+                               class="form-control {% if form.stock.errors %}is-invalid{% endif %}"
+                               value="{{ form.stock.value|default:'' }}"
+                               required>
+                        {% if form.stock.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.stock.errors|join:", " }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="form-section full-width">
+                    <h5 class="section-title">Additional Information</h5>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea id="description"
+                                  name="description"
+                                  class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                  rows="4">{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.description.errors|join:", " }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-light" onclick="window.history.back()">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Save Product
+                </button>
+            </div>
         </form>
-    {% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('imageInput');
+    const previewImage = document.getElementById('previewImage');
+    const imagePreview = document.getElementById('imagePreview');
+
+    // Handle drag and drop
+    imagePreview.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        imagePreview.classList.add('dragging');
+    });
+
+    imagePreview.addEventListener('dragleave', () => {
+        imagePreview.classList.remove('dragging');
+    });
+
+    imagePreview.addEventListener('drop', (e) => {
+        e.preventDefault();
+        imagePreview.classList.remove('dragging');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            handleImageFile(file);
+        }
+    });
+
+    // Handle click upload
+    imagePreview.addEventListener('click', () => {
+        imageInput.click();
+    });
+
+    imageInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleImageFile(e.target.files[0]);
+        }
+    });
+
+    function handleImageFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImage.src = e.target.result;
+            imagePreview.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
 {% endblock %}

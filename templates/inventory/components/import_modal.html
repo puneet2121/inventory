@@ -1,0 +1,37 @@
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Inventory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="import-instructions mb-3">
+                    <h6>Instructions:</h6>
+                    <ol class="small">
+                        <li>Download the template file if needed</li>
+                        <li>Fill in your inventory data</li>
+                        <li>Upload the completed file</li>
+                    </ol>
+                </div>
+
+                <div class="mb-3">
+                    <a href="{% url 'inventory:download_template' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-download"></i> Download Template
+                    </a>
+                </div>
+
+                <div class="upload-zone">
+                    <input type="file"
+                           class="form-control"
+                           accept=".xlsx,.xls,.csv"
+                           @change="handleImport">
+                    <small class="text-muted">Supported formats: .xlsx, .xls, .csv</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

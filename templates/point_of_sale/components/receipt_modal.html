@@ -1,0 +1,76 @@
+<div class="modal fade" id="receiptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sale Receipt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="receipt-container">
+                    <div class="receipt-header text-center">
+                        <h4>Century Auto</h4>
+                        <p class="mb-0">123 Auto Street</p>
+                        <p>Phone: (555) 123-4567</p>
+                    </div>
+
+                    <div class="receipt-info">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Date:</strong> <span x-text="new Date().toLocaleDateString()"></span>
+                            </div>
+                            <div class="col-6 text-end">
+                                <strong>Receipt #:</strong> <span x-text="receiptNumber"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="table table-sm receipt-items">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="item in cartItems" :key="item.productId">
+                                <tr>
+                                    <td x-text="item.name"></td>
+                                    <td class="text-center" x-text="item.quantity"></td>
+                                    <td class="text-end" x-text="'$' + item.price.toFixed(2)"></td>
+                                    <td class="text-end" x-text="'$' + (item.price * item.quantity).toFixed(2)"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                <td class="text-end" x-text="'$' + subtotal.toFixed(2)"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Tax (10%):</strong></td>
+                                <td class="text-end" x-text="'$' + tax.toFixed(2)"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                <td class="text-end"><strong x-text="'$' + total.toFixed(2)"></strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="receipt-footer text-center">
+                        <p>Thank you for your business!</p>
+                        <small>Please keep this receipt for your records</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @click="printReceipt">
+                    <i class="bi bi-printer"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

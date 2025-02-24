@@ -1,71 +1,225 @@
+{#{% extends 'core/page/full_page.html' %}#}
+{##}
+{#{% block page_content %}#}
+{#<div class="container mt-5">#}
+{#    <!-- Header Section -->#}
+{#    <div class="d-flex justify-content-between align-items-center mb-4">#}
+{#        <h2 class="text-primary">Customer List</h2>#}
+{#        <a href="{% url 'customers:add_customer' %}" class="btn btn-primary btn-sm">#}
+{#            <i class="fas fa-plus me-2"></i> Add Customer#}
+{#        </a>#}
+{#    </div>#}
+{##}
+{#    <!-- Search Bar -->#}
+{#    <div class="input-group mb-4">#}
+{#        <input#}
+{#            type="text"#}
+{#            class="form-control"#}
+{#            placeholder="Search customers..."#}
+{#            aria-label="Search customers"#}
+{#        />#}
+{#        <button class="btn btn-outline-secondary" type="button">#}
+{#            <i class="fas fa-search"></i>#}
+{#        </button>#}
+{#    </div>#}
+{##}
+{#    <!-- Table Card -->#}
+{#    <div class="card shadow-sm">#}
+{#        <div class="card-body table-responsive">#}
+{#            <table class="table table-hover table-striped">#}
+{#                <thead class="table-light">#}
+{#                    <tr>#}
+{#                        <th>Name</th>#}
+{#                        <th>City</th>#}
+{#                        <th>Type</th>#}
+{#                        <th>Contact</th>#}
+{#                        <th>Email</th>#}
+{#                        <th>Shop</th>#}
+{#                        <th>Debt</th>#}
+{#                    </tr>#}
+{#                </thead>#}
+{#                <tbody>#}
+{#                    {% for customer in customers %}#}
+{#                    <tr>#}
+{#                        <td>{{ customer.name }}</td>#}
+{#                        <td>{{ customer.city }}</td>#}
+{#                        <td>#}
+{#                            <i class="fas fa-user-tag"></i>#}
+{#                            {{ customer.get_customer_type_display }}#}
+{#                        </td>#}
+{#                        <td>{{ customer.contact }}</td>#}
+{#                        <td>{{ customer.email|default:"-" }}</td>#}
+{#                        <td>{{ customer.shop|default:"-" }}</td>#}
+{#                        <td>#}
+{#                            {% if customer.debt > 0 %}#}
+{#                            <span class="badge bg-danger">${{ customer.total_debt }}</span>#}
+{#                            {% else %}#}
+{#                            <span class="badge bg-success">${{ customer.total_debt }}</span>#}
+{#                            {% endif %}#}
+{#                        </td>#}
+{#                    </tr>#}
+{#                    {% empty %}#}
+{#                    <tr>#}
+{#                        <td colspan="7" class="text-center text-muted">No customers found.</td>#}
+{#                    </tr>#}
+{#                    {% endfor %}#}
+{#                </tbody>#}
+{#            </table>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{#{% endblock %}#}
+
 {% extends 'core/page/full_page.html' %}
+{% load static %}
+{% block extra_css %}
+<link href="{% static "css/cards.css" %}" rel="stylesheet"/>
+{% endblock %}
+{% block title %}Customers{% endblock %}
 
 {% block page_content %}
-<div class="container mt-5">
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary">Customer List</h2>
-        <a href="{% url 'customers:add_customer' %}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus me-2"></i> Add Customer
-        </a>
+<div class="page-container">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-icon bg-primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ total_customers }}</h3>
+                <p>Total Customers</p>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon bg-danger">
+                <i class="bi bi-cash"></i>
+            </div>
+            <div class="stats-info">
+                <h3>${{ total_debt|floatformat:2 }}</h3>
+                <p>Total Outstanding</p>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon bg-success">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ active_customers }}</h3>
+                <p>Active Customers</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Search Bar -->
-    <div class="input-group mb-4">
-        <input
-            type="text"
-            class="form-control"
-            placeholder="Search customers..."
-            aria-label="Search customers"
-        />
-        <button class="btn btn-outline-secondary" type="button">
-            <i class="fas fa-search"></i>
-        </button>
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search customers..." class="search-input">
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="bi bi-funnel"></i>
+                <span class="d-none d-md-inline">Filter</span>
+            </button>
+            <a href="{% url 'customers:add_customer' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                <span class="d-none d-md-inline">Add Customer</span>
+            </a>
+        </div>
     </div>
 
-    <!-- Table Card -->
-    <div class="card shadow-sm">
-        <div class="card-body table-responsive">
-            <table class="table table-hover table-striped">
-                <thead class="table-light">
+    <!-- Customers Table/Grid -->
+    <div class="card table-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>City</th>
+                        <th>Customer</th>
                         <th>Type</th>
-                        <th>Contact</th>
-                        <th>Email</th>
-                        <th>Shop</th>
-                        <th>Debt</th>
+                        <th class="d-none d-md-table-cell">Contact</th>
+                        <th class="d-none d-lg-table-cell">Email</th>
+                        <th>Outstanding</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for customer in customers %}
                     <tr>
-                        <td>{{ customer.name }}</td>
-                        <td>{{ customer.city }}</td>
                         <td>
-                            <i class="fas fa-user-tag"></i>
-                            {{ customer.get_customer_type_display }}
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle">{{ customer.name|first }}</div>
+                                <div class="ms-2">
+                                    <div class="fw-medium">{{ customer.name }}</div>
+                                    <div class="text-muted small">{{ customer.shop|default:'' }}</div>
+                                </div>
+                            </div>
                         </td>
-                        <td>{{ customer.contact }}</td>
-                        <td>{{ customer.email|default:"-" }}</td>
-                        <td>{{ customer.shop|default:"-" }}</td>
                         <td>
-                            {% if customer.debt > 0 %}
-                            <span class="badge bg-danger">${{ customer.total_debt }}</span>
-                            {% else %}
-                            <span class="badge bg-success">${{ customer.total_debt }}</span>
-                            {% endif %}
+                            <span class="badge bg-{{ customer.get_type_color }}">
+                                {{ customer.get_customer_type_display }}
+                            </span>
                         </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted">No customers found.</td>
+                        <td class="d-none d-md-table-cell">{{ customer.contact }}</td>
+                        <td class="d-none d-lg-table-cell">{{ customer.email|default:'-' }}</td>
+                        <td>
+                            <span class="{% if customer.total_debt > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ${{ customer.total_debt|floatformat:2 }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-light btn-sm" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-light btn-sm" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-light btn-sm" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">View History</a></li>
+                                        <li><a class="dropdown-item" href="#">Send Message</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#">Delete</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if customers.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ customers.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+
+                {% for num in customers.paginator.page_range %}
+                <li class="page-item {% if num == customers.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+
+                {% if customers.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ customers.next_page_number }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
 </div>
+
+{#{% include 'customers/components/filter_modal.html' %}#}
 {% endblock %}

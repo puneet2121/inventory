@@ -1,174 +1,479 @@
+{#{% extends 'core/page/full_page.html' %}#}
+{##}
+{#{% block page_content %}#}
+{#{% if formset.non_form_errors %}#}
+{#    <div class="alert alert-danger">#}
+{#        <ul>#}
+{#            {% for error in formset.non_form_errors %}#}
+{#            <li>{{ error }}</li>#}
+{#            {% endfor %}#}
+{#        </ul>#}
+{#    </div>#}
+{#{% endif %}#}
+{##}
+{#<div class="container mt-5" x-data="salesOrderApp()">#}
+{#    <h1>Create Sales Order</h1>#}
+{##}
+{#    <form method="post">#}
+{#        {% csrf_token %}#}
+{#        <div class="mb-3">#}
+{#            <label for="customer" class="form-label">Customer</label>#}
+{#            {{ sales_order_form.customer }}#}
+{#        </div>#}
+{#        <div class="mb-3">#}
+{#            <label for="customer_name" class="form-label">Customer Name</label>#}
+{#            {{ sales_order_form.customer_name }}#}
+{#        </div>#}
+{#        <div class="mb-3">#}
+{#            <label for="customer_type" class="form-label">Customer Type</label>#}
+{#            {{ sales_order_form.customer_type }}#}
+{#        </div>#}
+{#        <div class="mb-3">#}
+{#            <label for="employee" class="form-label">Salesperson</label>#}
+{#            {{ sales_order_form.employee }}#}
+{#        </div>#}
+{##}
+{#        <!-- Add Paid/Unpaid Field -->#}
+{#        <div class="mb-3">#}
+{#            <label for="payment_status" class="form-label">Payment Status</label>#}
+{#            <select name="payment_status" id="payment_status" class="form-select" required>#}
+{#                <option value="unpaid">Unpaid</option>#}
+{#                <option value="paid">Paid</option>#}
+{#            </select>#}
+{#        </div>#}
+{##}
+{#        <hr>#}
+{##}
+{#        <h3>Order Items</h3>#}
+{##}
+{#        <!-- Render the formset's management form -->#}
+{#        {{ formset.management_form }}#}
+{##}
+{#        <!-- Render each order item form -->#}
+{#        <template x-for="(item, index) in items" :key="index">#}
+{#            <div class="row align-items-center mb-3">#}
+{#                <div class="col-md-4">#}
+{#                    <label :for="'barcode-' + index" class="form-label">Barcode</label>#}
+{#                    <input :name="'items-' + index + '-barcode'" type="text" class="form-control"#}
+{#                           :id="'barcode-' + index" x-model="item.barcode" @input="findProductByBarcode(index)">#}
+{#                </div>#}
+{#                <div class="col-md-4">#}
+{#                    <label :for="'product-' + index" class="form-label">Product</label>#}
+{#                    <select :name="'items-' + index + '-product'" class="form-select" :id="'product-' + index" x-model="item.product" @change="updatePrice(index)">#}
+{#                        <option value="">Select a product</option>#}
+{#                        {% for product in products %}#}
+{#                        <option :value="{{ product.id }}" :data-price="{{ product.price }}" :data-barcode="{{ product.barcode }}" x-bind:selected="item.product == '{{ product.id }}'">#}
+{#                            {{ product.name }} - ${{ product.price }}#}
+{#                        </option>#}
+{#                        {% endfor %}#}
+{#                    </select>#}
+{#                </div>#}
+{#                <div class="col-md-2">#}
+{#                    <label :for="'quantity-' + index" class="form-label">Quantity</label>#}
+{#                    <input :name="'items-' + index + '-quantity'" type="number" class="form-control"#}
+{#                           :id="'quantity-' + index" x-model="item.quantity" @input="updateTotal">#}
+{#                </div>#}
+{#                <div class="col-md-2">#}
+{#                    <label :for="'price-' + index" class="form-label">Price</label>#}
+{#                    <input :name="'items-' + index + '-price'" type="number" class="form-control"#}
+{#                           :id="'price-' + index" x-model="item.price" readonly>#}
+{#                </div>#}
+{#                <div class="col-md-1">#}
+{#                    <button type="button" class="btn btn-danger mt-4" @click="removeItem(index)">X</button>#}
+{#                </div>#}
+{#            </div>#}
+{#        </template>#}
+{##}
+{#        <!-- Add new order item -->#}
+{#        <button type="button" class="btn btn-primary" @click="addItem">Add Item</button>#}
+{##}
+{#        <!-- Display Total -->#}
+{#        <div class="mt-3">#}
+{#            <strong>Total: $<span x-text="total.toFixed(2)"></span></strong>#}
+{#        </div>#}
+{##}
+{#        <!-- Submit button -->#}
+{#        <div class="mt-3">#}
+{#            <button type="submit" class="btn btn-success">Create Sales Order</button>#}
+{#        </div>#}
+{#    </form>#}
+{#</div>#}
+{##}
+{#<script>#}
+{#    function salesOrderApp() {#}
+{#        return {#}
+{#            items: [#}
+{#                {% for form in formset %}#}
+{#                {#}
+{#                    product: "{{ form.initial.product|default_if_none:'' }}",#}
+{#                    quantity: "{{ form.initial.quantity|default_if_none:'' }}",#}
+{#                    price: "{{ form.initial.price|default_if_none:'' }}",#}
+{#                    barcode: "{{ form.initial.barcode|default_if_none:'' }}"#}
+{#                },#}
+{#                {% endfor %}#}
+{#            ],#}
+{#            total: 0,#}
+{#            addItem() {#}
+{#                // Add a new empty item#}
+{#                this.items.push({ product: "", quantity: "", price: "", barcode: "" });#}
+{#                // Update the TOTAL_FORMS field in the formset management form#}
+{#                this.updateFormsetCount();#}
+{#            },#}
+{#            removeItem(index) {#}
+{#                // Remove the item at the specified index#}
+{#                this.items.splice(index, 1);#}
+{#                // Update the TOTAL_FORMS field in the formset management form#}
+{#                this.updateFormsetCount();#}
+{#                // Recalculate the total#}
+{#                this.updateTotal();#}
+{#            },#}
+{#            updatePrice(index) {#}
+{#                const selectedProduct = this.items[index].product;#}
+{#                const productElement = document.querySelector(`[name="items-${index}-product"]`);#}
+{#                const selectedOption = productElement.querySelector(`option[value="${selectedProduct}"]`);#}
+{#                if (selectedOption) {#}
+{#                    this.items[index].price = selectedOption.getAttribute('data-price');#}
+{#                }#}
+{#                this.updateTotal();#}
+{#            },#}
+{#            updateTotal() {#}
+{#                this.total = this.items.reduce((sum, item) => {#}
+{#                    return sum + (item.quantity * item.price);#}
+{#                }, 0);#}
+{#            },#}
+{#            updateFormsetCount() {#}
+{#                // Update the TOTAL_FORMS field in the formset management form#}
+{#                const totalFormsInput = document.querySelector('[name="items-TOTAL_FORMS"]');#}
+{#                if (totalFormsInput) {#}
+{#                    totalFormsInput.value = this.items.length;#}
+{#                }#}
+{#            },#}
+{#            findProductByBarcode(index) {#}
+{#                const barcode = this.items[index].barcode;#}
+{#                const productElement = document.querySelector(`[name="items-${index}-product"]`);#}
+{#                const options = productElement.querySelectorAll('option');#}
+{#                let found = false;#}
+{##}
+{#                options.forEach(option => {#}
+{#                    if (option.getAttribute('data-barcode') === barcode) {#}
+{#                        this.items[index].product = option.value;#}
+{#                        this.updatePrice(index);#}
+{#                        found = true;#}
+{#                    }#}
+{#                });#}
+{##}
+{#                if (!found) {#}
+{#                    this.items[index].product = "";#}
+{#                    this.items[index].price = "";#}
+{#                    this.updateTotal();#}
+{#                }#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#</script>#}
+{#{% endblock %}#}
+
 {% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Point of Sale{% endblock %}
+
+{% block extra_css %}
+<link href="{% static "css/pos.css" %}" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/components/notifications.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/receipt.css' %}">
+{% endblock %}
 
 {% block page_content %}
-{% if formset.non_form_errors %}
-    <div class="alert alert-danger">
-        <ul>
-            {% for error in formset.non_form_errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-{% endif %}
-
-<div class="container mt-5" x-data="salesOrderApp()">
-    <h1>Create Sales Order</h1>
-
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="customer" class="form-label">Customer</label>
-            {{ sales_order_form.customer }}
-        </div>
-        <div class="mb-3">
-            <label for="customer_name" class="form-label">Customer Name</label>
-            {{ sales_order_form.customer_name }}
-        </div>
-        <div class="mb-3">
-            <label for="customer_type" class="form-label">Customer Type</label>
-            {{ sales_order_form.customer_type }}
-        </div>
-        <div class="mb-3">
-            <label for="employee" class="form-label">Salesperson</label>
-            {{ sales_order_form.employee }}
+<div class="pos-container" x-data="posSystem">
+    <!-- Left Side - Product Selection -->
+    <div class="pos-products">
+        <div class="pos-header">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search products..." class="search-input" x-model="searchQuery">
+            </div>
+            <div class="category-tabs">
+                <button class="category-tab active">All</button>
+                <button class="category-tab">Parts</button>
+                <button class="category-tab">Services</button>
+                <button class="category-tab">Accessories</button>
+            </div>
         </div>
 
-        <!-- Add Paid/Unpaid Field -->
-        <div class="mb-3">
-            <label for="payment_status" class="form-label">Payment Status</label>
-            <select name="payment_status" id="payment_status" class="form-select" required>
-                <option value="unpaid">Unpaid</option>
-                <option value="paid">Paid</option>
-            </select>
-        </div>
-
-        <hr>
-
-        <h3>Order Items</h3>
-
-        <!-- Render the formset's management form -->
-        {{ formset.management_form }}
-
-        <!-- Render each order item form -->
-        <template x-for="(item, index) in items" :key="index">
-            <div class="row align-items-center mb-3">
-                <div class="col-md-4">
-                    <label :for="'barcode-' + index" class="form-label">Barcode</label>
-                    <input :name="'items-' + index + '-barcode'" type="text" class="form-control"
-                           :id="'barcode-' + index" x-model="item.barcode" @input="findProductByBarcode(index)">
+        <div class="products-grid">
+            {% for product in products %}
+            <div class="product-tile" @click="addToCart({{ product.id }}, '{{ product.name }}', {{ product.price }})">
+                <div class="product-image">
+                    <img src="{{ product.image.url|default:'static/images/placeholder.png' }}" alt="{{ product.name }}">
                 </div>
-                <div class="col-md-4">
-                    <label :for="'product-' + index" class="form-label">Product</label>
-                    <select :name="'items-' + index + '-product'" class="form-select" :id="'product-' + index" x-model="item.product" @change="updatePrice(index)">
-                        <option value="">Select a product</option>
-                        {% for product in products %}
-                        <option :value="{{ product.id }}" :data-price="{{ product.price }}" :data-barcode="{{ product.barcode }}" x-bind:selected="item.product == '{{ product.id }}'">
-                            {{ product.name }} - ${{ product.price }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label :for="'quantity-' + index" class="form-label">Quantity</label>
-                    <input :name="'items-' + index + '-quantity'" type="number" class="form-control"
-                           :id="'quantity-' + index" x-model="item.quantity" @input="updateTotal">
-                </div>
-                <div class="col-md-2">
-                    <label :for="'price-' + index" class="form-label">Price</label>
-                    <input :name="'items-' + index + '-price'" type="number" class="form-control"
-                           :id="'price-' + index" x-model="item.price" readonly>
-                </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-danger mt-4" @click="removeItem(index)">X</button>
+                <div class="product-info">
+                    <h6>{{ product.name }}</h6>
+                    <div class="product-price">${{ product.price|floatformat:2 }}</div>
+                    <div class="stock-badge {% if product.stock < 5 %}low-stock{% endif %}">
+                        Stock: {{ product.stock }}
+                    </div>
                 </div>
             </div>
-        </template>
+            {% endfor %}
+        </div>
+    </div>
 
-        <!-- Add new order item -->
-        <button type="button" class="btn btn-primary" @click="addItem">Add Item</button>
-
-        <!-- Display Total -->
-        <div class="mt-3">
-            <strong>Total: $<span x-text="total.toFixed(2)"></span></strong>
+    <!-- Right Side - Cart & Checkout -->
+    <div class="pos-cart">
+        <div class="cart-header">
+            <h5>Current Order</h5>
+            <button class="btn btn-outline-danger btn-sm" @click="clearCart">
+                <i class="bi bi-trash"></i> Clear
+            </button>
         </div>
 
-        <!-- Submit button -->
-        <div class="mt-3">
-            <button type="submit" class="btn btn-success">Create Sales Order</button>
+        <!-- Customer Selection -->
+        <div class="customer-select">
+            <div class="form-group">
+                <label>Customer</label>
+                <select class="form-select" x-model="selectedCustomer">
+                    <option value="">Walk-in Customer</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}">{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
-    </form>
+
+        <!-- Cart Items -->
+        <div class="cart-items">
+            <template x-for="(item, index) in cartItems" :key="index">
+                <div class="cart-item">
+                    <div class="item-info">
+                        <h6 x-text="item.name"></h6>
+                        <div class="item-price" x-text="'$' + item.price.toFixed(2)"></div>
+                    </div>
+                    <div class="item-quantity">
+                        <button class="btn btn-sm btn-light" @click="decrementQuantity(index)">-</button>
+                        <span x-text="item.quantity"></span>
+                        <button class="btn btn-sm btn-light" @click="incrementQuantity(index)">+</button>
+                    </div>
+                    <div class="item-total" x-text="'$' + (item.price * item.quantity).toFixed(2)"></div>
+                    <button class="btn btn-sm btn-light" @click="removeItem(index)">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="cart-summary">
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span x-text="'$' + subtotal.toFixed(2)"></span>
+            </div>
+            <div class="summary-row">
+                <span>Tax (10%)</span>
+                <span x-text="'$' + tax.toFixed(2)"></span>
+            </div>
+            <div class="summary-row total">
+                <span>Total</span>
+                <span x-text="'$' + total.toFixed(2)"></span>
+            </div>
+        </div>
+
+        <!-- Payment Section -->
+        <div class="payment-section">
+            <div class="payment-type">
+                <button class="payment-method-btn active" @click="paymentMethod = 'cash'">
+                    <i class="bi bi-cash"></i> Cash
+                </button>
+                <button class="payment-method-btn" @click="paymentMethod = 'card'">
+                    <i class="bi bi-credit-card"></i> Card
+                </button>
+                <button class="payment-method-btn" @click="paymentMethod = 'credit'">
+                    <i class="bi bi-journal-text"></i> Credit
+                </button>
+            </div>
+
+            <div class="amount-tendered" x-show="paymentMethod !== 'credit'">
+                <label>Amount Tendered</label>
+                <input type="number" class="form-control" x-model="amountTendered">
+                <div class="change-amount" x-show="change > 0">
+                    Change: $<span x-text="change.toFixed(2)"></span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg w-100" @click="processPayment">
+                Complete Sale
+            </button>
+        </div>
+    </div>
 </div>
 
+
 <script>
-    function salesOrderApp() {
-        return {
-            items: [
-                {% for form in formset %}
-                {
-                    product: "{{ form.initial.product|default_if_none:'' }}",
-                    quantity: "{{ form.initial.quantity|default_if_none:'' }}",
-                    price: "{{ form.initial.price|default_if_none:'' }}",
-                    barcode: "{{ form.initial.barcode|default_if_none:'' }}"
-                },
-                {% endfor %}
-            ],
-            total: 0,
-            addItem() {
-                // Add a new empty item
-                this.items.push({ product: "", quantity: "", price: "", barcode: "" });
-                // Update the TOTAL_FORMS field in the formset management form
-                this.updateFormsetCount();
-            },
-            removeItem(index) {
-                // Remove the item at the specified index
-                this.items.splice(index, 1);
-                // Update the TOTAL_FORMS field in the formset management form
-                this.updateFormsetCount();
-                // Recalculate the total
-                this.updateTotal();
-            },
-            updatePrice(index) {
-                const selectedProduct = this.items[index].product;
-                const productElement = document.querySelector(`[name="items-${index}-product"]`);
-                const selectedOption = productElement.querySelector(`option[value="${selectedProduct}"]`);
-                if (selectedOption) {
-                    this.items[index].price = selectedOption.getAttribute('data-price');
-                }
-                this.updateTotal();
-            },
-            updateTotal() {
-                this.total = this.items.reduce((sum, item) => {
-                    return sum + (item.quantity * item.price);
-                }, 0);
-            },
-            updateFormsetCount() {
-                // Update the TOTAL_FORMS field in the formset management form
-                const totalFormsInput = document.querySelector('[name="items-TOTAL_FORMS"]');
-                if (totalFormsInput) {
-                    totalFormsInput.value = this.items.length;
-                }
-            },
-            findProductByBarcode(index) {
-                const barcode = this.items[index].barcode;
-                const productElement = document.querySelector(`[name="items-${index}-product"]`);
-                const options = productElement.querySelectorAll('option');
-                let found = false;
+    document.addEventListener('alpine:init', () => {
+    Alpine.data('posSystem', () => ({
+        searchQuery: '',
+        selectedCustomer: '',
+        cartItems: [],
+        paymentMethod: 'cash',
+        amountTendered: 0,
+        isCartExpanded: false,
 
-                options.forEach(option => {
-                    if (option.getAttribute('data-barcode') === barcode) {
-                        this.items[index].product = option.value;
-                        this.updatePrice(index);
-                        found = true;
-                    }
+        init() {
+            // Initialize any required data
+            this.$watch('amountTendered', value => {
+                this.calculateChange();
+            });
+        },
+
+        get subtotal() {
+            return this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        },
+
+        get tax() {
+            return this.subtotal * 0.10; // 10% tax
+        },
+
+        get total() {
+            return this.subtotal + this.tax;
+        },
+
+        get change() {
+            return Math.max(0, this.amountTendered - this.total);
+        },
+
+        addToCart(productId, name, price) {
+            const existingItem = this.cartItems.find(item => item.productId === productId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                this.cartItems.push({
+                    productId,
+                    name,
+                    price,
+                    quantity: 1
                 });
+            }
 
-                if (!found) {
-                    this.items[index].product = "";
-                    this.items[index].price = "";
-                    this.updateTotal();
+            this.showNotification('Item added to cart');
+            this.expandCart();
+        },
+
+        removeItem(index) {
+            this.cartItems.splice(index, 1);
+        },
+
+        incrementQuantity(index) {
+            this.cartItems[index].quantity += 1;
+        },
+
+        decrementQuantity(index) {
+            if (this.cartItems[index].quantity > 1) {
+                this.cartItems[index].quantity -= 1;
+            } else {
+                this.removeItem(index);
+            }
+        },
+
+        clearCart() {
+            if (this.cartItems.length > 0) {
+                if (confirm('Are you sure you want to clear the cart?')) {
+                    this.cartItems = [];
                 }
             }
+        },
+
+        expandCart() {
+            if (window.innerWidth < 992) {
+                this.isCartExpanded = true;
+            }
+        },
+
+        toggleCart() {
+            this.isCartExpanded = !this.isCartExpanded;
+        },
+
+        async processPayment() {
+            if (this.cartItems.length === 0) {
+                this.showNotification('Cart is empty', 'error');
+                return;
+            }
+
+            if (this.paymentMethod !== 'credit' && this.amountTendered < this.total) {
+                this.showNotification('Insufficient amount tendered', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/pos/process-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken(),
+                    },
+                    body: JSON.stringify({
+                        items: this.cartItems,
+                        customerId: this.selectedCustomer,
+                        paymentMethod: this.paymentMethod,
+                        amountTendered: this.amountTendered,
+                        total: this.total
+                    })
+                });
+
+                if (response.ok) {
+                    this.showNotification('Payment processed successfully', 'success');
+                    this.printReceipt();
+                    this.resetCart();
+                } else {
+                    throw new Error('Payment processing failed');
+                }
+            } catch (error) {
+                this.showNotification('Error processing payment', 'error');
+                console.error('Payment error:', error);
+            }
+        },
+
+        resetCart() {
+            this.cartItems = [];
+            this.selectedCustomer = '';
+            this.paymentMethod = 'cash';
+            this.amountTendered = 0;
+        },
+
+        printReceipt() {
+            // Implementation for receipt printing
+        },
+
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="bi bi-${this.getNotificationIcon(type)}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        },
+
+        getNotificationIcon(type) {
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                info: 'info-circle'
+            };
+            return icons[type] || icons.info;
+        },
+
+        getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
         }
-    }
+    }));
+});
 </script>
+
 {% endblock %}

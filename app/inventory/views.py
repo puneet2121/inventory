@@ -1,6 +1,7 @@
 import openpyxl
 from django.contrib import messages
 from django.core.files.storage import default_storage
+from django.db.models import F
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -105,10 +106,15 @@ def item_list_view(request):
         }
         for product in products
     ]
+    products = Product.objects.all()
+
 
     context = {
         'products': product_list,
+        'total_items': products.count(),
+        'low_stock_count': products.filter(inventory__lte=5).count(),  # Changed to fixed value of 5
     }
+
     return render(request, 'inventory/page/item_list_page.html', context)
 
 

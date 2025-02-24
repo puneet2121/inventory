@@ -1,0 +1,75 @@
+<div class="modal fade" id="itemDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Item Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="item-detail-image">
+                            <img src="" alt="Item Image" id="detailImage" class="img-fluid rounded">
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="item-info-grid">
+                            <div class="info-group">
+                                <label>Name</label>
+                                <div id="detailName"></div>
+                            </div>
+                            <div class="info-group">
+                                <label>SKU</label>
+                                <div id="detailSku"></div>
+                            </div>
+                            <div class="info-group">
+                                <label>Category</label>
+                                <div id="detailCategory"></div>
+                            </div>
+                            <div class="info-group">
+                                <label>Price</label>
+                                <div id="detailPrice"></div>
+                            </div>
+                            <div class="info-group">
+                                <label>Stock</label>
+                                <div id="detailStock"></div>
+                            </div>
+                            <div class="info-group">
+                                <label>Status</label>
+                                <div id="detailStatus"></div>
+                            </div>
+                        </div>
+
+                        <div class="description-section mt-4">
+                            <h6>Description</h6>
+                            <p id="detailDescription"></p>
+                        </div>
+
+                        <div class="stock-history mt-4">
+                            <h6>Stock History</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Quantity</th>
+                                            <th>Reference</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="stockHistory">
+                                        <!-- Stock history will be populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @click="editItem(currentItemId)">Edit Item</button>
+            </div>
+        </div>
+    </div>
+</div>
