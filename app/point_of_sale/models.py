@@ -3,6 +3,12 @@ from app.employee.models import EmployeeProfile
 from app.inventory.models import Inventory, Product
 from app.customers.models import Customer  # Assuming you have a Customer model
 
+ORDER_STATUS_CHOICES = [
+    ('draft', 'Draft'),
+    ('completed', 'Completed'),
+    ('cancelled', 'Cancelled'),
+]
+
 
 class SalesOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
@@ -12,6 +18,8 @@ class SalesOrder(models.Model):
                                      choices=[('walk_in', 'Walk-in Customer'), ('registered', 'Registered Customer')],
                                      default='walk_in')
     employee = models.ForeignKey(EmployeeProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
+
+    status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='draft')
 
     @property
     def total_price(self):

@@ -1,133 +1,182 @@
 {% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block page_content %}
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sales Overview Cards -->
-            <div class="col-md-4">
-                <div class="card text-white bg-primary mb-4">
-                    <div class="card-header">Sales Today</div>
-                    <div class="card-body">
-                        <h5 class="card-title">${{ total_sales_today }}</h5>
-                        <canvas id="salesTodayChart"></canvas>
-                    </div>
-                </div>
+<div class="dashboard-container" x-data="dashboardManager">
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-icon bg-primary">
+                <i class="bi bi-graph-up"></i>
             </div>
-
-            <div class="col-md-4">
-                <div class="card text-white bg-success mb-4">
-                    <div class="card-header">Sales This Week</div>
-                    <div class="card-body">
-                        <h5 class="card-title">${{ total_sales_this_week }}</h5>
-                        <canvas id="salesThisWeekChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card text-white bg-warning mb-4">
-                    <div class="card-header">Sales Last Week</div>
-                    <div class="card-body">
-                        <h5 class="card-title">${{ total_sales_last_week }}</h5>
-                        <canvas id="salesLastWeekChart"></canvas>
-                    </div>
+            <div class="stats-info">
+                <h3>${{ today_sales|floatformat:2 }}</h3>
+                <p>Today's Sales</p>
+                <div class="stats-trend {% if today_sales_trend >= 0 %}up{% else %}down{% endif %}">
+                    <i class="bi bi-arrow-{% if today_sales_trend >= 0 %}up{% else %}down{% endif %}"></i>
+                    {{ today_sales_trend }}% vs yesterday
                 </div>
             </div>
         </div>
 
-        <!-- Low Inventory Products -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Low Inventory Products</h5>
+        <div class="stats-card">
+            <div class="stats-icon bg-success">
+                <i class="bi bi-calendar-check"></i>
             </div>
-            <div class="card-body">
-                <ul class="list-group">
-                    {% for product in low_inventory_products %}
-                        <li class="list-group-item">
-                            {{ product.name }} - {{ product.quantity }} left
-                        </li>
-                    {% empty %}
-                        <li class="list-group-item">No products with low inventory.</li>
-                    {% endfor %}
-                </ul>
+            <div class="stats-info">
+                <h3>${{ monthly_sales|floatformat:2 }}</h3>
+                <p>Monthly Sales</p>
+                <div class="stats-trend {% if monthly_sales_trend >= 0 %}up{% else %}down{% endif %}">
+                    <i class="bi bi-arrow-{% if monthly_sales_trend >= 0 %}up{% else %}down{% endif %}"></i>
+                    {{ monthly_sales_trend }}% vs last month
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-icon bg-info">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ total_orders }}</h3>
+                <p>Total Orders</p>
+                <div class="stats-trend">
+                    {{ orders_today }} orders today
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-icon bg-warning">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ low_stock_count }}</h3>
+                <p>Low Stock Items</p>
+                <div class="stats-trend">
+                    Needs attention
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Chart.js Scripts -->
-    <script>
-        const salesTodayData = {
-            labels: ['Today'],
-            datasets: [{
-                label: 'Total Sales Today',
-                data: [{{ total_sales_today }}],
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        };
+    <!-- Charts Section -->
+    <div class="charts-grid">
+        <!-- Sales Trend Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5>Sales Trend</h5>
+                <div class="chart-actions">
+                    <button class="btn btn-sm btn-light" @click="changePeriod('week')">Week</button>
+                    <button class="btn btn-sm btn-light" @click="changePeriod('month')">Month</button>
+                    <button class="btn btn-sm btn-light" @click="changePeriod('year')">Year</button>
+                </div>
+            </div>
+            <div class="chart-body">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
 
-        const salesThisWeekData = {
-            labels: ['This Week'],
-            datasets: [{
-                label: 'Total Sales This Week',
-                data: [{{ total_sales_this_week }}],
-                backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        };
+        <!-- Top Products Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5>Top Selling Products</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </div>
+    </div>
 
-        const salesLastWeekData = {
-            labels: ['Last Week'],
-            datasets: [{
-                label: 'Total Sales Last Week',
-                data: [{{ total_sales_last_week }}],
-                backgroundColor: 'rgba(255, 159, 64, 0.5)',
-                borderColor: 'rgba(255, 159, 64, 1)',
-                borderWidth: 1
-            }]
-        };
+    <!-- Data Tables Section -->
+    <div class="tables-grid">
+        <!-- Recent Orders -->
+        <div class="table-card">
+            <div class="table-header">
+                <h5>Recent Orders</h5>
+{#                <a href="{% url 'point_of_sale:order_list' %}" class="btn btn-sm btn-light">View All</a>#}
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>${{ order.total|floatformat:2 }}</td>
+                            <td>
+                                <span class="status-badge {{ order.status|lower }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ order.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-        // Sales Today Chart
-        new Chart(document.getElementById('salesTodayChart'), {
-            type: 'bar',
-            data: salesTodayData,
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+        <!-- Low Stock Items -->
+        <div class="table-card">
+            <div class="table-header">
+                <h5>Low Stock Items</h5>
+                <a href="{% url 'inventory:item_list' %}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Category</th>
+                            <th>Stock</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in low_stock_items %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.sku }}</td>
+                            <td>{{ product.category }}</td>
+                            <td>
+                                <span class="stock-badge low">
+                                    {{ product.stock }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'inventory:edit_product' product.id %}" class="btn btn-sm btn-light">
+                                    Update Stock
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-        // Sales This Week Chart
-        new Chart(document.getElementById('salesThisWeekChart'), {
-            type: 'bar',
-            data: salesThisWeekData,
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        // Sales Last Week Chart
-        new Chart(document.getElementById('salesLastWeekChart'), {
-            type: 'bar',
-            data: salesLastWeekData,
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    </script>
+{% block extra_js %}
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

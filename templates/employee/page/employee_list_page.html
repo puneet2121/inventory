@@ -1,49 +1,132 @@
 {% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Employees{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/employee.css' %}">
+{% endblock %}
 
 {% block page_content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary">Employee List</h2>
-        <a href="{% url 'employee:create_employee' %}" class="btn btn-success me-2">
-            <i class="fas fa-plus"></i> Create Employee
-        </a>
+<div class="employee-container" x-data="employeeManager">
+    <!-- Stats Section -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-icon bg-primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ total_employees }}</h3>
+                <p>Total Employees</p>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon bg-success">
+                <i class="bi bi-person-check"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ active_employees }}</h3>
+                <p>Active Employees</p>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon bg-info">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ this_month_joined }}</h3>
+                <p>New This Month</p>
+            </div>
+        </div>
     </div>
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <table class="table table-bordered table-striped table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Phone</th>
-                        <th>Address</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for employee in employees %}
-                    <tr>
-                        <td>{{ employee.user.username }}</td>
-                        <td>{{ employee.get_role_display }}</td>
-                        <td>{{ employee.phone }}</td>
-                        <td>{{ employee.address }}</td>
-                        <td>
-                            <a href="{% url 'employee:edit_employee' employee.id %}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <a href="{% url 'employee:delete_employee' employee.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this employee?');">
-                                <i class="fas fa-trash"></i> Delete
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted">No employees found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text"
+                   class="search-input"
+                   placeholder="Search employees..."
+                   x-model="searchQuery"
+                   @input="filterEmployees">
+        </div>
+
+        <div class="action-buttons">
+            <a href="{% url 'employee:create_employee' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                <span class="d-none d-md-inline">Add Employee</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Employees Grid -->
+    <div class="employees-grid">
+        {% for employee in employees %}
+        <div class="employee-card" data-employee-id="{{ employee.id }}">
+            <div class="employee-header">
+                <div class="employee-avatar">
+                    {% if employee.image %}
+                        <img src="{{ employee.image.url }}" alt="{{ employee.full_name }}">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            {{ employee.get_initials }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="employee-status {% if employee.is_active %}active{% endif %}">
+                    {{ employee.get_status_display }}
+                </div>
+            </div>
+
+            <div class="employee-info">
+                <h5>{{ employee.full_name }}</h5>
+                <p class="position">{{ employee.position }}</p>
+                <div class="contact-info">
+                    <div class="info-item">
+                        <i class="bi bi-envelope"></i>
+                        {{ employee.email }}
+                    </div>
+                    <div class="info-item">
+                        <i class="bi bi-telephone"></i>
+                        {{ employee.phone }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="employee-footer">
+                <button class="btn btn-light btn-sm" @click="viewDetails({{ employee.id }})">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-light btn-sm" @click="editEmployee({{ employee.id }})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-light btn-sm" @click="deleteEmployee({{ employee.id }})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Employee Details Modal -->
+<div class="modal fade" id="employeeDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Employee Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="employee-details">
+                    <!-- Content will be populated dynamically -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/employee.js' %}"></script>
 {% endblock %}

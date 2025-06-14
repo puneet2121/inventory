@@ -1,0 +1,15 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block page_content %}
+<h2>{% if form.instance.pk %}Edit Assignment{% else %}Assign Employee{% endif %}</h2>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {{ form.as_p }}
+
+  <button type="submit" class="btn btn-primary">Save Assignment</button>
+  <a href="{% url 'employee:assignment-calendar' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

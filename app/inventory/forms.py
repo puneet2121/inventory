@@ -1,7 +1,8 @@
 from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit, Row, Column, Layout
+from crispy_forms.layout import Submit, Row, Column, Layout, Div, Button, HTML
 from app.inventory.models import Inventory, InventoryImage, Product
+from .models import Category
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -23,35 +24,60 @@ class MultipleFileField(forms.FileField):
 
 
 class ProductForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(ProductForm, self).__init__(*args, **kwargs)
-        self.helper = FormHelper(self)
-        self.helper.layout = Layout(
-            Row(
-                Column("Name", css_class="form-group col-3"),
-                Column("Category", css_class="form-group col-3"),
-                Column("model", css_class='form-group col-6'),
-                Column("cost", css_class="form-group col-6"),
-                Column("Price", css_class="form-group col-6"),
-                Column("Price A", css_class="form-group col-6"),
-                Column("Price B", css_class="form-group col-6"),
-                Column("Price B", css_class="form-group col-6"),
-                Column("description", css_class="form-group col-6"),
-                Column("barcode", css_class='form-group col-6'),
-
-            ),
-        )
-        self.helper.add_input(Submit("submit", "Submit", css_class="btn-primary btn-sm bg-primary"))
-
     class Meta:
         model = Product
-        exclude = ['image_url']
+        fields = ['name', 'category', 'cost', 'price',
+                  'description', 'barcode', 'model']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False  # Don't render form tag as we'll handle it in template
+        self.helper.layout = Layout(
+            Div(
+                # Basic Information Section
+                HTML('<h5 class="section-title">Basic Information</h5>'),
+                Div(
+                    Div('name', css_class='form-group mb-3'),
+                    Div('category', css_class='form-group mb-3'),
+                    Div('model', css_class='form-group mb-3'),
+                    Div('barcode', css_class='form-group mb-3'),
+                    css_class='col-md-6'
+                ),
+                # Pricing Section
+                Div(
+                    HTML('<h5 class="section-title">Pricing Information</h5>'),
+                    Div('cost', css_class='form-group mb-3'),
+                    Div('price', css_class='form-group mb-3'),
+                    css_class='col-md-6'
+                ),
+                css_class='row'
+            ),
+            # Description Section
+            Div(
+                HTML('<h5 class="section-title mt-3">Description</h5>'),
+                Div('description', css_class='form-group'),
+                css_class='col-12'
+            ),
+        )
 
 
 class InventoryForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ['location', 'quantity']
+        fields = ['quantity','location']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Div(
+                Div('quantity', css_class='form-group'),
+                css_class='col-md-6'
+            ),
+            Div('location'),
+        )
 
 
 class InventoryImageForm(forms.ModelForm):
@@ -60,3 +86,20 @@ class InventoryImageForm(forms.ModelForm):
     class Meta:
         model = InventoryImage
         fields = ['image', ]
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter category name'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Enter category description'
+            }),
+        }

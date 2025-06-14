@@ -1,5 +1,5 @@
 /* Container Styles */
-.product-form-container {
+.employee-form-container {
     padding: 1.5rem;
     max-width: 1200px;
     margin: 0 auto;
@@ -33,16 +33,6 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* Section Titles */
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
 /* Form Controls */
 .form-label {
     font-weight: 500;
@@ -60,7 +50,7 @@
 }
 
 .form-control:hover {
-    border-color: #ff69b4; /* Pink border on hover */
+    border-color: #ff69b4;
 }
 
 .form-control:focus {
@@ -69,42 +59,9 @@
     outline: none;
 }
 
-/* Select Styling */
-select.form-control {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 16px 12px;
-    padding-right: 2.5rem;
-}
-
-/* Textarea Styling */
-textarea.form-control {
-    min-height: 120px;
-    resize: vertical;
-}
-
 /* Form Groups */
 .form-group {
     margin-bottom: 1.5rem;
-}
-
-/* Inventory Section */
-.inventory-section {
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-/* Form Actions */
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* Buttons */
@@ -129,14 +86,15 @@ textarea.form-control {
     border-color: #ff1493;
 }
 
-.btn-light {
-    background-color: #f8f9fa;
-    border-color: #f8f9fa;
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
 }
 
-.btn-light:hover {
-    background-color: #e9ecef;
-    border-color: #e9ecef;
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
 }
 
 /* Alert Messages */
@@ -146,19 +104,6 @@ textarea.form-control {
     margin-bottom: 1rem;
 }
 
-.alert-success {
-    background-color: #d1e7dd;
-    border-color: #badbcc;
-    color: #0f5132;
-}
-
-.alert-danger {
-    background-color: #f8d7da;
-    border-color: #f5c2c7;
-    color: #842029;
-}
-
-/* Invalid Feedback */
 .invalid-feedback {
     color: #dc3545;
     font-size: 0.875rem;
@@ -167,7 +112,7 @@ textarea.form-control {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .product-form-container {
+    .employee-form-container {
         padding: 1rem;
     }
 
@@ -185,9 +130,5 @@ textarea.form-control {
         width: 100%;
         display: flex;
         justify-content: flex-end;
-    }
-
-    .btn {
-        padding: 0.625rem 1.25rem;
     }
 }

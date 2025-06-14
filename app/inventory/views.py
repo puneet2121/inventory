@@ -5,8 +5,8 @@ from django.db.models import F
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from app.inventory.forms import ProductForm, InventoryImageForm, InventoryForm
-from app.inventory.models import Inventory, InventoryImage
+from app.inventory.forms import ProductForm, InventoryImageForm, InventoryForm, CategoryForm
+from app.inventory.models import Inventory, InventoryImage, Category
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
@@ -31,7 +31,6 @@ from .models import Product, Inventory
 
 @login_required(login_url='/authentication/login/')
 def create_or_edit_product_info(request, product_id=None):
-    # Check if we are editing a product or creating a new one
     product_instance = get_object_or_404(Product, pk=product_id) if product_id else None
     inventory_instance = None
 
@@ -39,46 +38,37 @@ def create_or_edit_product_info(request, product_id=None):
         try:
             inventory_instance = Inventory.objects.get(product=product_instance)
         except Inventory.DoesNotExist:
-            inventory_instance = None
+            pass
 
     if request.method == 'POST':
-        # Initialize both forms with POST data
-        product_form = ProductForm(request.POST, request.FILES, instance=product_instance)
+        product_form = ProductForm(request.POST, instance=product_instance)
         inventory_form = InventoryForm(request.POST, instance=inventory_instance)
 
         if product_form.is_valid() and inventory_form.is_valid():
-            # Save product first
-            product = product_form.save()
+            try:
+                product = product_form.save()
+                inventory = inventory_form.save(commit=False)
+                inventory.product = product
+                inventory.save()
 
-            # Save inventory and associate it with the product
-            inventory = inventory_form.save(commit=False)
-            inventory.product = product
-            inventory.save()
-
-            messages.success(request, 'Product information saved successfully!')
-
-            return redirect('inventory:product_list')
-
-            # if 'next' in request.POST:
-            #     return redirect('inventory:upload_images', product_id=product.pk)
-            # elif 'save_later' in request.POST:
-            #     return redirect('inventory:product_list')
+                messages.success(request, 'Product saved successfully!')
+                return redirect('inventory:item_list')
+            except Exception as e:
+                messages.error(request, f'Error saving product: {str(e)}')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
-        # Initialize both forms for GET requests
         product_form = ProductForm(instance=product_instance)
         inventory_form = InventoryForm(instance=inventory_instance)
 
-    # Pass both forms to the template
-    return render(
-        request,
-        'inventory/page/product_upload_page.html',
-        {
-            'product_form': product_form,
-            'inventory_form': inventory_form,
-            'product_id': product_id,
-        },
-    )
+    context = {
+        'product_form': product_form,
+        'inventory_form': inventory_form,
+        'product_id': product_id,
+        'is_edit': product_id is not None
+    }
 
+    return render(request, 'inventory/page/product_upload_page.html', context)
 
 @login_required(login_url='/authentication/login/')
 def item_list_view(request):
@@ -242,3 +232,60 @@ def import_inventory(request):
 
     messages.error(request, "No file selected or invalid request.")
     return redirect('inventory:item_list')
+
+
+@login_required
+def category_list(request):
+    categories = Category.objects.all()
+    context = {
+        'categories': categories,
+    }
+    return render(request, 'inventory/page/category_list_page.html', context)
+
+
+@login_required
+def add_category(request):
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Category added successfully!')
+            return redirect('inventory:category_list')
+    else:
+        form = CategoryForm()
+
+    return render(request, 'inventory/page/category_form.html', {
+        'form': form,
+        'is_add': True
+    })
+
+
+@login_required
+def edit_category(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Category updated successfully!')
+            return redirect('inventory:category_list')
+    else:
+        form = CategoryForm(instance=category)
+
+    return render(request, 'inventory/page/category_form.html', {
+        'form': form,
+        'category': category,
+        'is_add': False
+    })
+
+
+@login_required
+def delete_category(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    if request.method == 'POST':
+        try:
+            category.delete()
+            messages.success(request, 'Category deleted successfully!')
+        except Exception as e:
+            messages.error(request, 'Cannot delete category. It has associated products.')
+    return redirect('inventory:category_list')

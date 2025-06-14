@@ -9,4 +9,10 @@ urlpatterns = [
     path('delete/<int:pk>', views.delete_employee, name='delete_employee'),
     path('list/', views.employee_list, name='employee_list'),
 
+# Calendar-related
+    path('calendar/', views.assignment_calendar, name='assignment-calendar'),
+    path('assignments/json/', views.assignment_events, name='assignment-events'),
+    path('assignments/create/', views.assignment_create, name='assignment-create'),
+
+
 ]

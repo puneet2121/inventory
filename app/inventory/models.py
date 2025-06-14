@@ -16,13 +16,21 @@ class OrderTypeChoices(models.TextChoices):
     WHOLESALE = 'WHOLESALE', 'Wholesale'
 
 
-class CategoryTypeChoices(models.TextChoices):
-    PHONE_COVER = 'PHONE COVER', 'Phone cover'
-    SCREEN_GUARD = 'SCREEN GUARD', 'Screen guard'
-    AIRPODS = 'AIRPODS', 'Airpods'
-    AIRPOD_CASES = 'AIRPOD_CASES', 'Airpod cases'
-    CAMERA_LENS = 'CAMERA_LENS', 'Camera lens'
-    OTHER_ACCESSORIES = 'OTHER_ACCESSORIES', 'Other accessories'
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Categories"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    def product_count(self):
+        return self.product_set.count()
 
 
 class Role(models.Model):
@@ -38,12 +46,10 @@ class Role(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=200)
-    category = models.CharField(max_length=100, choices=CategoryTypeChoices.choices)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     cost = models.DecimalField(max_digits=10, decimal_places=2)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    price_A = models.DecimalField(max_digits=10, decimal_places=2)
-    price_B = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField()
+    description = models.TextField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     barcode = models.CharField(max_length=100, default='')
     model = models.CharField(max_length=100)

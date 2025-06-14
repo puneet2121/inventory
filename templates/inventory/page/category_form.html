@@ -1,0 +1,68 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}{% if is_add %}Add{% else %}Edit{% endif %} Category{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/category.css' %}">
+{% endblock %}
+
+{% block page_content %}
+<div class="category-form-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h4>{% if is_add %}Add New{% else %}Edit{% endif %} Category</h4>
+            <p class="text-muted">{% if is_add %}Create a new category{% else %}Update category details{% endif %}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'inventory:category_list' %}" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i>
+                <span class="d-none d-md-inline">Back to List</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card">
+        <form method="post" class="category-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="{{ form.name.id_for_label }}" class="form-label">Category Name*</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.name.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.description.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{% url 'inventory:category_list' %}" class="btn btn-light">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i>
+                    {% if is_add %}Save{% else %}Update{% endif %} Category
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
