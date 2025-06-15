@@ -106,7 +106,7 @@ class EmployeeForm(forms.ModelForm):
 class EmployeeAssignmentForm(forms.ModelForm):
     class Meta:
         model = EmployeeAssignment
-        fields = ['employee', 'location', 'date', 'note','assigned_by']
+        fields = ['employee', 'location', 'date', 'note', 'assigned_by']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
         }
