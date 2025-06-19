@@ -1,0 +1,89 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block page_content %}
+<div class="max-w-5xl mx-auto p-8 bg-white shadow rounded">
+  <div class="mb-6">
+    <h2 class="text-2xl font-semibold">
+      {% if form.instance.pk %}Edit Bill{% else %}Create Bill{% endif %}
+    </h2>
+    <p class="text-gray-600">Fill in the bill/expense details below</p>
+  </div>
+
+  <form method="post" novalidate class="space-y-6">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Category -->
+      <div>
+        {{ form.category|as_crispy_field }}
+      </div>
+      <!-- Amount -->
+      <div>
+        {{ form.amount|as_crispy_field }}
+      </div>
+
+      <!-- Bill Date -->
+      <div>
+        {{ form.bill_date|as_crispy_field }}
+      </div>
+
+      <!-- Employee (conditional field) -->
+      <div id="employee-field">
+        {{ form.paid_to|as_crispy_field }}
+      </div>
+
+      <div id="vehicle-field">
+        {{ form.vehicle|as_crispy_field }}
+      </div>
+      <!-- Notes -->
+      <div class="md:col-span-2">
+        {{ form.notes|as_crispy_field }}
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end mt-6 space-x-4">
+{#      <a href="{% url 'purchases:bill_list' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">#}
+{#        Cancel#}
+{#      </a>#}
+      <button type="submit" class="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600">
+        Save Bill
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const categoryField = document.getElementById("id_category");
+    const employeeFieldDiv = document.getElementById("employee-field");
+    const vehicleFieldDiv = document.getElementById("vehicle-field");
+
+    function toggleEmployeeField() {
+      const value = categoryField.value;
+
+      // Show/hide employee
+      if (value === "salary") {
+        employeeFieldDiv.style.display = "block";
+      } else {
+        employeeFieldDiv.style.display = "none";
+      }
+
+      // Show/hide vehicle
+      if (value === "gas") {
+        vehicleFieldDiv.style.display = "block";
+      } else {
+        vehicleFieldDiv.style.display = "none";
+      }
+    }
+
+    categoryField.addEventListener("change", toggleEmployeeField);
+
+    // Initial state
+    toggleEmployeeField();
+  });
+</script>
+
+{% endblock %}

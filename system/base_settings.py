@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'app.authentication.apps.AuthenticationConfig',
     'app.point_of_sale.apps.PointOfSaleConfig',
     'app.employee.apps.EmployeeConfig',
+    'app.purchase.apps.PurchaseConfig',
     'app.dashboard.apps.DashboardConfig',
     'app.customers.apps.CustomersConfig',
 ]

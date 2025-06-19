@@ -1,0 +1,48 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block page_content %}
+<div class="max-w-6xl mx-auto p-8 bg-white shadow rounded">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-semibold">All Bills</h2>
+    <a href="{% url 'purchase:create_bill' %}" class="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600">
+      + Add Bill
+    </a>
+  </div>
+
+  {% if bills %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full table-auto border border-gray-200 rounded">
+        <thead class="bg-gray-100 text-gray-700">
+          <tr>
+            <th class="text-left px-4 py-2 border">Date</th>
+            <th class="text-left px-4 py-2 border">Category</th>
+            <th class="text-left px-4 py-2 border">Amount</th>
+            <th class="text-left px-4 py-2 border">Paid To</th>
+            <th class="text-left px-4 py-2 border">Employee</th>
+            <th class="text-left px-4 py-2 border">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bill in bills %}
+            <tr class="border-t">
+              <td class="px-4 py-2">{{ bill.bill_date }}</td>
+              <td class="px-4 py-2 capitalize">{{ bill.get_category_display }}</td>
+              <td class="px-4 py-2">₹{{ bill.amount }}</td>
+              <td class="px-4 py-2">{{ bill.paid_to|default:"—" }}</td>
+              <td class="px-4 py-2">{{ bill.employee.user.get_full_name|default:"—" }}</td>
+              <td class="px-4 py-2 space-x-2">
+                <a href="{% url 'purchase:bill_edit' bill.pk %}" class="text-blue-600 hover:underline">Edit</a>
+                <a href="{% url 'purchase:bill_delete' bill.pk %}" class="text-red-600 hover:underline">Delete</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-gray-600">No bills have been recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
