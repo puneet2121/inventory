@@ -1,7 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Bill
-from .forms import BillForm
 
 from app.purchase.forms import BillForm
 
@@ -36,6 +35,5 @@ def bill_delete(request, pk):
 
 
 def bill_list(request):
-    bills = Bill.objects.all()
     bills = Bill.objects.select_related('paid_to__user').order_by('-bill_date')
     return render(request, 'purchase/page/bill_list.html', {'bills': bills})

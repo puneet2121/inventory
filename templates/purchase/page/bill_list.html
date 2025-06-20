@@ -20,7 +20,6 @@
             <th class="text-left px-4 py-2 border">Category</th>
             <th class="text-left px-4 py-2 border">Amount</th>
             <th class="text-left px-4 py-2 border">Paid To</th>
-            <th class="text-left px-4 py-2 border">Employee</th>
             <th class="text-left px-4 py-2 border">Actions</th>
           </tr>
         </thead>
@@ -31,7 +30,6 @@
               <td class="px-4 py-2 capitalize">{{ bill.get_category_display }}</td>
               <td class="px-4 py-2">₹{{ bill.amount }}</td>
               <td class="px-4 py-2">{{ bill.paid_to|default:"—" }}</td>
-              <td class="px-4 py-2">{{ bill.employee.user.get_full_name|default:"—" }}</td>
               <td class="px-4 py-2 space-x-2">
                 <a href="{% url 'purchase:bill_edit' bill.pk %}" class="text-blue-600 hover:underline">Edit</a>
                 <a href="{% url 'purchase:bill_delete' bill.pk %}" class="text-red-600 hover:underline">Delete</a>
