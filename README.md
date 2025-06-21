@@ -89,7 +89,7 @@ This phase integrates POS weighing support, platform syncs, and enhanced locatio
 - **Django**: Backend logic and database management.
 - **Django REST Framework (DRF)**: API creation.
 - **PostgreSQL**: Database.
-- **Redis**: Cache and task management.
+- **Redis**: Cache and task management. 
 - **JWT Authentication**: Secure user access.
 - **Celery**: Background task management.
 - **Amazon S3**: Static file storage.
