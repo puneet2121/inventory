@@ -1,7 +1,8 @@
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from app.employee.models import EmployeeProfile
 from app.inventory.models import Inventory, Product
-from app.customers.models import Customer  # Assuming you have a Customer model
+from app.customers.models import Customer
 
 ORDER_STATUS_CHOICES = [
     ('draft', 'Draft'),
@@ -12,7 +13,6 @@ ORDER_STATUS_CHOICES = [
 
 class SalesOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
-    customer_name = models.CharField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     customer_type = models.CharField(max_length=20,
                                      choices=[('walk_in', 'Walk-in Customer'), ('registered', 'Registered Customer')],
@@ -20,13 +20,42 @@ class SalesOrder(models.Model):
     employee = models.ForeignKey(EmployeeProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
 
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='draft')
+    note = models.TextField(blank=True, null=True)
+    order_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    cached_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     @property
     def total_price(self):
         return sum(item.total_price for item in self.items.all())
 
+    def finalize_order(self):
+        if self.status == 'completed':
+            raise ValidationError("Order is already completed.")
+
+        with transaction.atomic():
+            # Check inventory availability per location
+            for item in self.items.select_related('product').all():
+                try:
+                    inventory = Inventory.objects.get(product=item.product, location=self.location)
+                except Inventory.DoesNotExist:
+                    raise ValidationError(f"No inventory record found for {item.product.name} at {self.location}")
+
+                if inventory.quantity < item.quantity:
+                    raise ValidationError(f"Not enough stock for {item.product.name} at {self.location}")
+
+            # Deduct inventory after all validations pass
+            for item in self.items.select_related('product').all():
+                inventory = Inventory.objects.get(product=item.product, location=self.location)
+                inventory.quantity -= item.quantity
+                inventory.save()
+
+            # Finalize order
+            self.cached_total = self.total_price
+            self.status = 'completed'
+            self.save()
+
     def __str__(self):
-        return f"Order #{self.id} - {self.customer_name or 'Walk-in Customer'}"
+        return f"Order #{self.id} - {self.customer.name or 'Walk-in Customer'}"
 
     class Meta:
         db_table = 'sales_order'
@@ -42,15 +71,8 @@ class OrderItem(models.Model):
     def save(self, *args, **kwargs):
         """Automatically calculate total price and adjust inventory."""
         with transaction.atomic():
-            self.total_price = self.quantity * self.price
-
             # Adjust inventory
-            inventory = Inventory.objects.select_for_update().get(product=self.product)
-            if inventory.quantity < self.quantity:
-                raise ValueError(f"Not enough inventory for {self.product.name}. Available: {inventory.quantity}")
-            inventory.quantity -= self.quantity
-            inventory.save()
-
+            self.total_price = self.quantity * self.price
             super().save(*args, **kwargs)
 
     def __str__(self):
@@ -61,32 +83,31 @@ class OrderItem(models.Model):
 
 
 class Invoice(models.Model):
-    PAYMENT_STATUS_CHOICES = [
-        ('unpaid', 'Unpaid'),
-        ('partial', 'Partial'),
-        ('paid', 'Paid'),
-    ]
-
     sales_order = models.OneToOneField(SalesOrder, on_delete=models.CASCADE, related_name="invoice")
     date = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
+    invoice_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    cached_paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     @property
     def paid_amount(self):
         return sum(payment.amount for payment in self.payments.all())
 
+    def update_cached_paid_amount(self):
+        self.cached_paid_amount = sum(p.amount for p in self.payments.all())
+        self.save()
+
     @property
     def payment_status(self):
-        total_price = self.sales_order.total_price
-        if self.paid_amount >= total_price:
+        total_price = self.sales_order.cached_total
+        if self.cached_paid_amount >= total_price:
             return 'paid'
-        elif 0 < self.paid_amount < total_price:
+        elif self.cached_paid_amount > 0:
             return 'partial'
-        else:
-            return 'unpaid'
+        return 'unpaid'
 
     def __str__(self):
-        return f"Invoice {self.invoice_id}"
+        return f"Invoice #{self.invoice_number or self.id}"
 
     class Meta:
         db_table = 'invoice'
@@ -104,7 +125,7 @@ class Payment(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Payment of {self.amount} for Invoice {self.invoice.invoice_id}"
+        return f"Payment of {self.amount} for Invoice {self.invoice.invoice_number or self.invoice.id}"
 
     class Meta:
         db_table = 'payment'

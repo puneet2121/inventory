@@ -6,12 +6,13 @@ from app.employee.models import EmployeeProfile
 
 
 class SalesOrderForm(forms.ModelForm):
+    customer_name = forms.CharField(required=False)
+
     class Meta:
         model = SalesOrder
-        fields = ['customer', 'customer_name', 'customer_type', 'employee']
+        fields = ['customer', 'customer_type', 'employee']  # remove 'customer_name'
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-control'}),
-            'customer_name': forms.TextInput(attrs={'class': 'form-control'}),
             'customer_type': forms.Select(attrs={'class': 'form-control'}),
             'employee': forms.Select(attrs={'class': 'form-control'}),
         }
@@ -20,22 +21,41 @@ class SalesOrderForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['customer'].queryset = Customer.objects.all()
         self.fields['customer'].empty_label = "Select a customer (optional)"
-        self.fields['customer_name'].required = False  # Make it optional
-        self.fields['customer_name'].widget.attrs['placeholder'] = "Enter customer name for walk-in"
+        self.fields['customer_name'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': "Enter customer name for walk-in",
+        })
         self.fields['employee'].queryset = EmployeeProfile.objects.all()
         self.fields['employee'].empty_label = "Select an employee"
+
     def clean(self):
         cleaned_data = super().clean()
         customer = cleaned_data.get('customer')
         customer_name = cleaned_data.get('customer_name')
         customer_type = cleaned_data.get('customer_type')
-        employee = cleaned_data.get('employee')
 
         if customer_type == 'registered' and not customer:
             raise forms.ValidationError("A registered customer must be selected.")
         if customer_type == 'walk_in' and not customer_name:
             raise forms.ValidationError("Customer name is required for walk-in customers.")
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        customer_type = self.cleaned_data.get('customer_type')
+        customer_name = self.cleaned_data.get('customer_name')
+
+        if customer_type == 'walk_in' and customer_name:
+            # Try to reuse or create a walk-in customer
+            customer, created = Customer.objects.get_or_create(
+                name=customer_name.strip(),
+                defaults={'is_walk_in': True}  # Add this flag in your Customer model if needed
+            )
+            instance.customer = customer
+
+        if commit:
+            instance.save()
+        return instance
 
 
 class OrderItemForm(forms.ModelForm):

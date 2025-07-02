@@ -3,7 +3,7 @@ from .models import SalesOrder, OrderItem
 
 
 class SalesOrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer_name', 'total_items', 'total_price', 'created_at')
+    list_display = ('id', 'customer', 'total_items', 'total_price', 'created_at')
 
     @admin.display(description='Total Items')
     def total_items(self, obj):
