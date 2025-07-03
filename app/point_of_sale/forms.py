@@ -1,32 +1,54 @@
 from django import forms
-from .models import SalesOrder, OrderItem
+from django.forms import inlineformset_factory
+from .models import SalesOrder, OrderItem, Payment
 from app.customers.models import Customer
 from app.inventory.models import Product
 from app.employee.models import EmployeeProfile
 
 
 class SalesOrderForm(forms.ModelForm):
-    customer_name = forms.CharField(required=False)
+    customer_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter customer name for walk-in'
+        })
+    )
+    note = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Add any notes about this order...'
+        })
+    )
 
     class Meta:
         model = SalesOrder
-        fields = ['customer', 'customer_type', 'employee']  # remove 'customer_name'
+        fields = ['customer', 'customer_type', 'employee', 'note']
         widgets = {
-            'customer': forms.Select(attrs={'class': 'form-control'}),
-            'customer_type': forms.Select(attrs={'class': 'form-control'}),
-            'employee': forms.Select(attrs={'class': 'form-control'}),
+            'customer': forms.Select(attrs={
+                'class': 'form-select',
+                'x-model': 'selectedCustomer',
+                '@change': 'handleCustomerChange()'
+            }),
+            'customer_type': forms.Select(attrs={
+                'class': 'form-select',
+                'x-model': 'customerType'
+            }),
+            'employee': forms.Select(attrs={
+                'class': 'form-select'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['customer'].queryset = Customer.objects.all()
         self.fields['customer'].empty_label = "Select a customer (optional)"
-        self.fields['customer_name'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': "Enter customer name for walk-in",
-        })
         self.fields['employee'].queryset = EmployeeProfile.objects.all()
         self.fields['employee'].empty_label = "Select an employee"
+        self.fields['customer'].required = False
+        self.fields['employee'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
@@ -49,9 +71,19 @@ class SalesOrderForm(forms.ModelForm):
             # Try to reuse or create a walk-in customer
             customer, created = Customer.objects.get_or_create(
                 name=customer_name.strip(),
-                defaults={'is_walk_in': True}  # Add this flag in your Customer model if needed
+                defaults={
+                    'city': 'Walk-in',
+                    'customer_type': 'C',
+                    'contact': '0000000000'
+                }
             )
             instance.customer = customer
+
+        # Auto-generate order number if not present
+        if not instance.order_number:
+            last_order = SalesOrder.objects.order_by('-id').first()
+            next_number = (last_order.id + 1) if last_order else 1
+            instance.order_number = f"SO-{next_number:05d}"
 
         if commit:
             instance.save()
@@ -86,3 +118,42 @@ class OrderItemForm(forms.ModelForm):
                     f"Not enough inventory for {product.name}. Available: {inventory.quantity}"
                 )
         return cleaned_data
+
+
+class PaymentForm(forms.ModelForm):
+    class Meta:
+        model = Payment
+        fields = ['amount', 'payment_method']
+        widgets = {
+            'amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0.01',
+                'placeholder': 'Enter payment amount'
+            }),
+            'payment_method': forms.Select(attrs={
+                'class': 'form-select'
+            })
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['amount'].required = True
+        self.fields['payment_method'].required = True
+
+    def clean_amount(self):
+        amount = self.cleaned_data.get('amount')
+        if amount and amount <= 0:
+            raise forms.ValidationError("Amount must be greater than zero.")
+        return amount
+
+
+# Create the formset for order items
+OrderItemFormSet = inlineformset_factory(
+    SalesOrder,
+    OrderItem,
+    form=OrderItemForm,
+    extra=1,
+    can_delete=True,
+    fields=['product', 'quantity', 'price']
+)

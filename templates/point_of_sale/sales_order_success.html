@@ -1,0 +1,38 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Sales Order Created{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="card-title text-success mb-3">Sales Order Created Successfully!</h2>
+                    {% if order %}
+                    <p class="card-text">
+                        <strong>Order Number:</strong> {{ order.order_number }}<br>
+                        <strong>Customer:</strong> {{ order.customer.name }}<br>
+                        <strong>Total:</strong> ${{ order.total_price|floatformat:2 }}<br>
+                        <strong>Status:</strong> {{ order.get_status_display }}
+                    </p>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'point_of_sale:create_sales_order' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Another Order
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary">
+                            <i class="bi bi-printer"></i> Print Receipt
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

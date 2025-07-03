@@ -1,0 +1,311 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Sales Orders{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-draft {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+    
+    .status-confirmed {
+        background-color: #e8f5e8;
+        color: #2e7d32;
+    }
+    
+    .status-invoiced {
+        background-color: #fff3e0;
+        color: #f57c00;
+    }
+    
+    .action-buttons .btn {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .order-card {
+        transition: transform 0.2s;
+        border: 1px solid #e9ecef;
+    }
+    
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-clipboard-data me-2"></i>Sales Orders
+                </h2>
+                <div>
+                    <a href="{% url 'point_of_sale:create_sales_order' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>New Sales Order
+                    </a>
+                    <a href="{% url 'point_of_sale:invoice_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-receipt me-2"></i>View Invoices
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <h4>{{ sales_orders.count }}</h4>
+                <p class="mb-0">Total Orders</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <h4>{% with draft_count=0 %}{% for order in sales_orders %}{% if not order.has_invoice %}{% widthratio draft_count 1 1 as draft_count %}{% endif %}{% endfor %}{{ draft_count }}{% endwith %}</h4>
+                <p class="mb-0">Draft Orders</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <h4>{% with invoiced_count=0 %}{% for order in sales_orders %}{% if order.has_invoice %}{% widthratio invoiced_count 1 1 as invoiced_count %}{% endif %}{% endfor %}{{ invoiced_count }}{% endwith %}</h4>
+                <p class="mb-0">Invoiced</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <h4>${{ sales_orders|length|floatformat:2 }}</h4>
+                <p class="mb-0">Total Value</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Search by order number or customer..." id="searchInput">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="invoiced">Invoiced</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="dateFilter">
+                    <option value="">All Dates</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                    <i class="bi bi-x-circle"></i> Clear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Orders Table/Cards -->
+    <div class="row" id="ordersContainer">
+        {% for order in sales_orders %}
+        <div class="col-lg-6 col-xl-4 mb-4 order-item" 
+             data-order-number="{{ order.order_number }}" 
+             data-customer="{{ order.customer.name|default:'Walk-in' }}"
+             data-status="{% if order.has_invoice %}invoiced{% else %}draft{% endif %}"
+             data-date="{{ order.created_at|date:'Y-m-d' }}">
+            <div class="card order-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">{{ order.order_number }}</h6>
+                    <span class="status-badge {% if order.has_invoice %}status-invoiced{% else %}status-draft{% endif %}">
+                        {% if order.has_invoice %}Invoiced{% else %}Draft{% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Customer</small>
+                            <div class="fw-semibold">{{ order.customer.name|default:"Walk-in" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Date</small>
+                            <div class="fw-semibold">{{ order.created_at|date:"M d, Y" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Items</small>
+                            <div class="fw-semibold">{{ order.total_items|default:0 }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Total</small>
+                            <div class="fw-semibold text-success">${{ order.total_amount|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if order.employee %}
+                    <div class="mb-3">
+                        <small class="text-muted">Salesperson</small>
+                        <div class="fw-semibold">{{ order.employee.user.get_full_name|default:order.employee.user.username }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if order.note %}
+                    <div class="mb-3">
+                        <small class="text-muted">Notes</small>
+                        <div class="small text-truncate">{{ order.note }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="action-buttons d-flex flex-wrap">
+                        <a href="{% url 'point_of_sale:sales_order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                        
+                        {% if not order.has_invoice %}
+                        <a href="{% url 'point_of_sale:edit_sales_order' order.id %}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="{% url 'point_of_sale:convert_to_invoice' order.id %}" 
+                           class="btn btn-sm btn-success"
+                           onclick="return confirm('Convert this sales order to an invoice? This action cannot be undone.')">
+                            <i class="bi bi-receipt"></i> Convert to Invoice
+                        </a>
+                        {% else %}
+                        <a href="{% url 'point_of_sale:invoice_detail' order.invoice.id %}" class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-receipt"></i> View Invoice
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-x display-1 text-muted"></i>
+                <h4 class="mt-3">No Sales Orders Found</h4>
+                <p class="text-muted">Create your first sales order to get started.</p>
+                <a href="{% url 'point_of_sale:create_sales_order' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Create Sales Order
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const ordersContainer = document.getElementById('ordersContainer');
+    
+    function filterOrders() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const dateValue = dateFilter.value;
+        const orderItems = document.querySelectorAll('.order-item');
+        
+        let visibleCount = 0;
+        
+        orderItems.forEach(item => {
+            const orderNumber = item.dataset.orderNumber.toLowerCase();
+            const customer = item.dataset.customer.toLowerCase();
+            const status = item.dataset.status;
+            const orderDate = new Date(item.dataset.date);
+            const now = new Date();
+            
+            let showItem = true;
+            
+            // Search filter
+            if (searchTerm && !orderNumber.includes(searchTerm) && !customer.includes(searchTerm)) {
+                showItem = false;
+            }
+            
+            // Status filter
+            if (statusValue && status !== statusValue) {
+                showItem = false;
+            }
+            
+            // Date filter
+            if (dateValue) {
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+                
+                switch (dateValue) {
+                    case 'today':
+                        if (orderDate < today) showItem = false;
+                        break;
+                    case 'week':
+                        if (orderDate < weekAgo) showItem = false;
+                        break;
+                    case 'month':
+                        if (orderDate < monthAgo) showItem = false;
+                        break;
+                }
+            }
+            
+            if (showItem) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        const emptyState = document.querySelector('.col-12 .text-center.py-5');
+        if (emptyState) {
+            emptyState.style.display = visibleCount === 0 ? '' : 'none';
+        }
+    }
+    
+    searchInput.addEventListener('input', filterOrders);
+    statusFilter.addEventListener('change', filterOrders);
+    dateFilter.addEventListener('change', filterOrders);
+    
+    window.clearFilters = function() {
+        searchInput.value = '';
+        statusFilter.value = '';
+        dateFilter.value = '';
+        filterOrders();
+    };
+});
+</script>
+{% endblock %}

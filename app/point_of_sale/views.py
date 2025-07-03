@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
@@ -7,71 +8,212 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
+from django.contrib import messages
 
-from .models import SalesOrder, OrderItem, Invoice, Payment, EmployeeProfile
-from .forms import SalesOrderForm, OrderItemForm
+from .models import SalesOrder, OrderItem, Invoice, Payment
+from .forms import SalesOrderForm, OrderItemForm, PaymentForm
 from django.db import transaction
 
 from ..customers.models import Customer
 from ..inventory.models import Product
+from ..employee.models import EmployeeProfile
 
 
 # Sales Order Views
+@login_required(login_url='/authentication/login/')
+def sales_order_list(request):
+    """Display list of all sales orders with status and actions"""
+    sales_orders = SalesOrder.objects.all().select_related('customer', 'employee').prefetch_related('items__product').order_by('-created_at')
+    
+    # Add computed fields
+    for order in sales_orders:
+        order.total_amount = sum(item.quantity * item.price for item in order.items.all())
+        order.total_items = sum(item.quantity for item in order.items.all())
+        order.has_invoice = hasattr(order, 'invoice')
+        order.status_display = order.get_status_display() if hasattr(order, 'get_status_display') else 'Draft'
+    
+    return render(request, 'point_of_sale/sales_order_list.html', {
+        'sales_orders': sales_orders
+    })
+
+
+@login_required(login_url='/authentication/login/')
+def sales_order_detail(request, sales_order_id):
+    """Display detailed view of a sales order"""
+    sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
+    order_items = sales_order.items.all().select_related('product')
+    
+    # Calculate totals
+    subtotal = sum(item.quantity * item.price for item in order_items)
+    tax = subtotal * 0  # 0% tax for now
+    total = subtotal + tax
+    
+    return render(request, 'point_of_sale/sales_order_detail.html', {
+        'sales_order': sales_order,
+        'order_items': order_items,
+        'subtotal': subtotal,
+        'tax': tax,
+        'total': total,
+        'has_invoice': hasattr(sales_order, 'invoice')
+    })
+
+
+@login_required(login_url='/authentication/login/')
+def edit_sales_order(request, sales_order_id):
+    """Edit an existing sales order"""
+    sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
+    
+    # Check if order can be edited (not invoiced yet)
+    if hasattr(sales_order, 'invoice'):
+        messages.error(request, "Cannot edit a sales order that has already been converted to an invoice.")
+        return redirect('point_of_sale:sales_order_detail', sales_order_id=sales_order.id)
+    
+    # Serialize products for JavaScript
+    products = Product.objects.all().values('id', 'name', 'price', 'barcode', 'model')
+    products_list = []
+    for product in products:
+        product_dict = dict(product)
+        if isinstance(product_dict.get('price'), Decimal):
+            product_dict['price'] = float(product_dict['price'])
+        products_list.append(product_dict)
+    products_json = json.dumps(products_list)
+    
+    customers = Customer.objects.all()
+    employees = EmployeeProfile.objects.all()
+    order_items = sales_order.items.all()
+
+    if request.method == "POST":
+        sales_order_form = SalesOrderForm(request.POST, instance=sales_order)
+        
+        if sales_order_form.is_valid():
+            try:
+                with transaction.atomic():
+                    updated_sales_order = sales_order_form.save()
+                    
+                    # Delete existing items and recreate them
+                    sales_order.items.all().delete()
+                    
+                    # Process items from the frontend
+                    total_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
+                    
+                    for i in range(total_forms):
+                        product_id = request.POST.get(f'items-{i}-product')
+                        quantity = request.POST.get(f'items-{i}-quantity')
+                        price = request.POST.get(f'items-{i}-price')
+                        
+                        if product_id and quantity and price:
+                            try:
+                                product = Product.objects.get(id=product_id)
+                                OrderItem.objects.create(
+                                    sales_order=updated_sales_order,
+                                    product=product,
+                                    quantity=int(quantity),
+                                    price=float(price)
+                                )
+                            except (Product.DoesNotExist, ValueError) as e:
+                                messages.error(request, f"Error updating item: {str(e)}")
+                                continue
+
+                    messages.success(request, f"Sales order {updated_sales_order.order_number} updated successfully!")
+                    return redirect('point_of_sale:sales_order_detail', sales_order_id=updated_sales_order.id)
+                    
+            except Exception as e:
+                messages.error(request, f"Error updating sales order: {str(e)}")
+        else:
+            for field, errors in sales_order_form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        # Initialize form with existing data
+        initial_data = {
+            'customer_name': sales_order.customer.name if sales_order.customer and sales_order.customer.city == 'Walk-in' else ''
+        }
+        sales_order_form = SalesOrderForm(instance=sales_order, initial=initial_data)
+
+    return render(request, 'point_of_sale/edit_sales_order.html', {
+        'sales_order_form': sales_order_form,
+        'sales_order': sales_order,
+        'order_items': order_items,
+        'products': products_json,
+        'customers': customers,
+        'employees': employees
+    })
+
+
 @login_required(login_url='/authentication/login/')
 def create_sales_order(request):
     OrderItemFormSet = inlineformset_factory(
         SalesOrder, OrderItem, form=OrderItemForm, extra=1, can_delete=True
     )
-    products = Product.objects.all()  # Fetch products to pass to the template
+    
+    # Serialize products for JavaScript
+    products = Product.objects.all().values('id', 'name', 'price', 'barcode', 'model')
+    # Convert Decimal to float for JSON serialization
+    products_list = []
+    for product in products:
+        product_dict = dict(product)
+        if isinstance(product_dict.get('price'), Decimal):
+            product_dict['price'] = float(product_dict['price'])
+        products_list.append(product_dict)
+    products_json = json.dumps(products_list)
+    
     customers = Customer.objects.all()
     employees = EmployeeProfile.objects.all()
 
     if request.method == "POST":
         sales_order_form = SalesOrderForm(request.POST)
-        formset = OrderItemFormSet(request.POST, prefix="items")
+        
+        # Handle cart data from the frontend
+        cart_data = request.POST.get('cart_data')
+        if cart_data:
+            try:
+                cart_items = json.loads(cart_data)
+            except json.JSONDecodeError:
+                cart_items = []
+        else:
+            cart_items = []
 
-        if sales_order_form.is_valid() and formset.is_valid():
+        if sales_order_form.is_valid():
             try:
                 with transaction.atomic():
                     sales_order = sales_order_form.save()
-                    order_items = formset.save(commit=False)
-                    for item in order_items:
-                        item.sales_order = sales_order
-                        item.save()
+                    
+                    # Process items from the frontend
+                    total_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
+                    
+                    for i in range(total_forms):
+                        product_id = request.POST.get(f'items-{i}-product')
+                        quantity = request.POST.get(f'items-{i}-quantity')
+                        price = request.POST.get(f'items-{i}-price')
+                        
+                        if product_id and quantity and price:
+                            try:
+                                product = Product.objects.get(id=product_id)
+                                OrderItem.objects.create(
+                                    sales_order=sales_order,
+                                    product=product,
+                                    quantity=int(quantity),
+                                    price=float(price)
+                                )
+                            except (Product.DoesNotExist, ValueError) as e:
+                                messages.error(request, f"Error adding item: {str(e)}")
+                                continue
 
-                    # Save any remaining deleted forms from the formset
-                    formset.save_m2m()
-
-                    # invoice = Invoice.objects.create(
-                    #     sales_order=sales_order,
-                    #     is_paid=(sales_order.payment_status == 'paid')
-                    # )
-                    #
-                    # # If payment is marked as paid, create a Payment record
-                    # if sales_order.payment_status == 'paid':
-                    #     Payment.objects.create(
-                    #         invoice=invoice,
-                    #         payment_method='cash'  # Default payment method, can be dynamic
-                    #     )
-
-                    return redirect('point_of_sale:create_sales_order')
+                    messages.success(request, f"Sales order {sales_order.order_number} created successfully!")
+                    return redirect('point_of_sale:sales_order_detail', sales_order_id=sales_order.id)
+                    
             except Exception as e:
-                formset.non_form_errors = [str(e)]  # Add error to non-form errors
+                messages.error(request, f"Error creating sales order: {str(e)}")
         else:
-            if not sales_order_form.is_valid():
-                sales_order_form.add_error(None, "Sales order form is invalid.")
-            if not formset.is_valid():
-                for form in formset:
-                    if not form.is_valid():
-                        form.add_error(None, "Order item form is invalid.")
+            for field, errors in sales_order_form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         sales_order_form = SalesOrderForm()
-        formset = OrderItemFormSet(prefix="items")
 
-    return render(request, 'point_of_sale/sales_order_form.html', {
+    return render(request, 'point_of_sale/create_sales_order.html', {
         'sales_order_form': sales_order_form,
-        'formset': formset,
-        'products': products,  # Pass products to the template
+        'products': products_json,
         'customers': customers,
         'employees': employees
     })
@@ -94,8 +236,20 @@ def add_order_items(request, sales_order_id):
 def convert_to_invoice(request, sales_order_id):
     sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
     if not hasattr(sales_order, 'invoice'):
-        Invoice.objects.create(sales_order=sales_order, invoice_id=f"INV-{sales_order.id}")
-    return redirect('invoice_list')
+        # Generate a unique invoice number
+        last_invoice = Invoice.objects.order_by('-id').first()
+        next_number = (last_invoice.id + 1) if last_invoice else 1
+        invoice_number = f"INV-{next_number:05d}"
+        
+        invoice = Invoice.objects.create(
+            sales_order=sales_order, 
+            invoice_number=invoice_number
+        )
+        messages.success(request, f"Sales order {sales_order.order_number} has been converted to invoice {invoice_number}!")
+    else:
+        messages.info(request, f"Sales order {sales_order.order_number} is already converted to an invoice.")
+    
+    return redirect('point_of_sale:invoice_list')
 
 
 # Invoice Views

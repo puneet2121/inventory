@@ -1,7 +1,7 @@
 {% extends 'core/page/full_page.html' %}
 {% load static %}
 
-{% block title %}Create Sales Order{% endblock %}
+{% block title %}Edit Sales Order - {{ sales_order.order_number }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -101,22 +101,37 @@
         color: #1976d2;
         margin-bottom: 20px;
     }
+    
+    .alert-warning {
+        border-left: 4px solid #ffc107;
+    }
 </style>
 {% endblock %}
 
 {% block page_content %}
-<div class="container-fluid py-4" x-data="salesOrderApp()">
+<div class="container-fluid py-4" x-data="salesOrderEditApp()">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0">
-                    <i class="bi bi-cart-plus me-2"></i>Create Sales Order
+                    <i class="bi bi-pencil-square me-2"></i>Edit Sales Order
                 </h2>
-                <div class="order-number" x-show="orderNumber">
-                    Order #: <span x-text="orderNumber"></span>
+                <div>
+                    <a href="{% url 'point_of_sale:sales_order_detail' sales_order.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Order
+                    </a>
+                    <a href="{% url 'point_of_sale:sales_order_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-list"></i> All Orders
+                    </a>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Note:</strong> You are editing sales order <strong>{{ sales_order.order_number }}</strong>. 
+        Changes will be saved when you submit the form.
     </div>
 
     <form method="post" @submit="handleSubmit">
@@ -125,6 +140,11 @@
         <div class="row">
             <!-- Left Column - Form Data -->
             <div class="col-lg-8">
+                <!-- Order Number Display -->
+                <div class="order-number">
+                    Order #: {{ sales_order.order_number }}
+                </div>
+
                 <!-- Customer Information -->
                 <div class="customer-form-section">
                     <h5 class="form-section-title">Customer Information</h5>
@@ -281,11 +301,11 @@
                     
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success btn-lg" :disabled="items.length === 0 || !isFormValid">
-                            <i class="bi bi-check-circle"></i> Create Order
+                            <i class="bi bi-check-circle"></i> Update Order
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" @click="resetForm()">
-                            <i class="bi bi-arrow-clockwise"></i> Reset
-                        </button>
+                        <a href="{% url 'point_of_sale:sales_order_detail' sales_order.id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
                     </div>
                 </div>
             </div>
@@ -295,20 +315,10 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('salesOrderApp', () => ({
-        customerType: 'walk_in',
-        selectedCustomer: '',
-        orderNumber: '',
-        items: [
-            {
-                product: null,
-                productSearch: '',
-                quantity: 1,
-                price: 0,
-                showResults: false,
-                searchResults: []
-            }
-        ],
+    Alpine.data('salesOrderEditApp', () => ({
+        customerType: '{{ sales_order.customer_type|default:"walk_in" }}',
+        selectedCustomer: '{{ sales_order.customer.id|default:"" }}',
+        items: [],
         products: (() => {
             try {
                 const productsData = JSON.parse('{{ products|escapejs }}');
@@ -322,19 +332,44 @@ document.addEventListener('alpine:init', () => {
         searchTimeout: null,
 
         init() {
-            this.generateOrderNumber();
+            // Initialize items from existing order items
+            const existingItems = [
+                {% for item in order_items %}
+                {
+                    product: {
+                        id: {{ item.product.id }},
+                        name: "{{ item.product.name|escapejs }}",
+                        price: {{ item.price }},
+                        barcode: "{{ item.product.barcode|default:'' }}"
+                    },
+                    productSearch: "{{ item.product.name|escapejs }}",
+                    quantity: {{ item.quantity }},
+                    price: {{ item.price }},
+                    showResults: false,
+                    searchResults: []
+                },
+                {% endfor %}
+            ];
+            
+            this.items = existingItems.length > 0 ? existingItems : [this.getEmptyItem()];
+            
             this.$watch('customerType', () => {
                 this.handleCustomerTypeChange();
             });
+            
             console.log('Total products loaded:', this.products.length);
-            if (this.products.length === 0) {
-                alert('Warning: No products loaded. Check console for errors.');
-            }
+            console.log('Existing items loaded:', this.items.length);
         },
 
-        generateOrderNumber() {
-            const timestamp = Date.now();
-            this.orderNumber = `SO-${timestamp.toString().slice(-8)}`;
+        getEmptyItem() {
+            return {
+                product: null,
+                productSearch: '',
+                quantity: 1,
+                price: 0,
+                showResults: false,
+                searchResults: []
+            };
         },
 
         handleCustomerTypeChange() {
@@ -344,7 +379,6 @@ document.addEventListener('alpine:init', () => {
         },
 
         handleCustomerChange() {
-            // Handle customer selection change
             console.log('Customer changed:', this.selectedCustomer);
         },
 
@@ -381,14 +415,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         addItem() {
-            this.items.push({
-                product: null,
-                productSearch: '',
-                quantity: 1,
-                price: 0,
-                showResults: false,
-                searchResults: []
-            });
+            this.items.push(this.getEmptyItem());
         },
 
         removeItem(index) {
@@ -457,27 +484,6 @@ document.addEventListener('alpine:init', () => {
             }
 
             return true;
-        },
-
-        resetForm() {
-            if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
-                this.customerType = 'walk_in';
-                this.selectedCustomer = '';
-                this.items = [
-                    {
-                        product: null,
-                        productSearch: '',
-                        quantity: 1,
-                        price: 0,
-                        showResults: false,
-                        searchResults: []
-                    }
-                ];
-                this.generateOrderNumber();
-                
-                // Reset form fields
-                document.querySelector('form').reset();
-            }
         }
     }));
 });

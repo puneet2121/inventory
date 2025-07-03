@@ -1,0 +1,90 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Invoices{% endblock %}
+
+{% block extra_css %}
+<style>
+    .invoice-row {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: box-shadow 0.2s;
+    }
+
+    .invoice-row:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .paid-badge {
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+
+    .paid-yes {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .paid-no {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .invoice-summary {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        border-radius: 8px;
+        padding: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-receipt me-2"></i> Invoices
+            </h2>
+
+            {% for invoice in invoices %}
+            <div class="invoice-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <strong>Num: {{ invoice.invoice_number }}</strong>
+                        <br><small class="text-muted">Date: {{ invoice.date|date:'M d, Y' }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Order: {{ invoice.sales_order.order_number }}</strong>
+                        <br><small class="text-muted">{{ invoice.sales_order.customer.name|default:'Walk-in' }}</small>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="badge paid-badge {% if invoice.is_paid %}paid-yes{% else %}paid-no{% endif %}">
+                            {% if invoice.is_paid %}Paid{% else %}Unpaid{% endif %}
+                        </span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong>${{ invoice.sales_order.cached_total|floatformat:2 }}</strong>
+                        <br><small class="text-muted">Total</small>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <a href="{% url 'point_of_sale:invoice_detail' invoice.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-x display-1 text-muted"></i>
+                <h4 class="mt-3">No Invoices Found</h4>
+                <p class="text-muted">Create a sales order to generate invoices.<p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
