@@ -119,14 +119,8 @@ USE_TZ = True
 
 STATIC_URL = os.getenv('DJANGO_STATIC_URL', '/static/')
 
-if not DEBUG:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-else:
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, "static"),
-    ]
-
-
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Your source static files (dev)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')    # Collected static files (production)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
