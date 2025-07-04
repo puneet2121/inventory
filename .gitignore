@@ -9,3 +9,6 @@ __pycache__/
 # JetBrains IDE files
 .idea/
 *.iml
+
+/staticfiles/
+./staticfiles
