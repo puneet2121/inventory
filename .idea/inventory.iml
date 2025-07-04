@@ -13,7 +13,66 @@
     </facet>
   </component>
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/include" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/aiohttp" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/aiohttp-3.11.2.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/alpine" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/alpine-1.0.14.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/boto3" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/boto3-1.34.61.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/botocore" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/botocore-1.34.61.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/corsheaders" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/crispy_bootstrap5" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/crispy_bootstrap5-2024.2.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/crispy_forms" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/django_cors_headers-4.5.0.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/django_crispy_forms-2.1.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/django_storages-1.14.2.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/djangorestframework-3.15.2.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/djangorestframework_simplejwt-5.3.1.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/_config" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/_libs" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/_testing" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/api" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/arrays" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/errors" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/plotting" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/api" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/arithmetic" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/arrays" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/base" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/computation" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/construction" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/dtypes" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/frame" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/generic" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/groupby" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/indexes" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/indexing" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/interchange" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/internals" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/libs" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/plotting" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/reductions" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/scalar" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/tslibs" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pandas/tests/window" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pip-25.1.1.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pip/_vendor/dependency_groups" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pip/_vendor/packaging/licenses" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pip/_vendor/resolvelib/resolvers" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/pip/_vendor/tomli_w" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/rest_framework" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/rest_framework_simplejwt" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/s3transfer" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/s3transfer-0.10.0.dist-info" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/storages" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv/lib/python3.12/site-packages/tutorial" />
+      <excludeFolder url="file://$MODULE_DIR$/.vscode" />
+    </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="chart.js" level="application" />

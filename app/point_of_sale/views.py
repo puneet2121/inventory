@@ -2,6 +2,7 @@ import json
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
@@ -88,6 +89,12 @@ def edit_sales_order(request, sales_order_id):
         if sales_order_form.is_valid():
             try:
                 with transaction.atomic():
+                    # First, reverse the previous inventory changes by setting status back to draft
+                    if sales_order.status == 'completed':
+                        # TODO: Add inventory restoration logic here if needed
+                        sales_order.status = 'draft'
+                        sales_order.save()
+                    
                     updated_sales_order = sales_order_form.save()
                     
                     # Delete existing items and recreate them
@@ -114,7 +121,21 @@ def edit_sales_order(request, sales_order_id):
                                 messages.error(request, f"Error updating item: {str(e)}")
                                 continue
 
-                    messages.success(request, f"Sales order {updated_sales_order.order_number} updated successfully!")
+                    # Finalize the updated order
+                    try:
+                        updated_sales_order.finalize_order()
+                        messages.success(request, f"Sales order {updated_sales_order.order_number} updated and inventory adjusted successfully!")
+                    except ValidationError as e:
+                        messages.error(request, f"Error finalizing updated order: {str(e)}")
+                        return render(request, 'point_of_sale/edit_sales_order.html', {
+                            'sales_order_form': sales_order_form,
+                            'sales_order': sales_order,
+                            'order_items': order_items,
+                            'products': products_json,
+                            'customers': customers,
+                            'employees': employees
+                        })
+                    
                     return redirect('point_of_sale:sales_order_detail', sales_order_id=updated_sales_order.id)
                     
             except Exception as e:
@@ -180,27 +201,42 @@ def create_sales_order(request):
                     
                     # Process items from the frontend
                     total_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
-                    
                     for i in range(total_forms):
                         product_id = request.POST.get(f'items-{i}-product')
                         quantity = request.POST.get(f'items-{i}-quantity')
                         price = request.POST.get(f'items-{i}-price')
-                        
+
                         if product_id and quantity and price:
                             try:
                                 product = Product.objects.get(id=product_id)
+                                qty = int(quantity)
+                                unit_price = float(price)
+
                                 OrderItem.objects.create(
                                     sales_order=sales_order,
                                     product=product,
-                                    quantity=int(quantity),
-                                    price=float(price)
+                                    quantity=qty,
+                                    price=unit_price
                                 )
                             except (Product.DoesNotExist, ValueError) as e:
                                 messages.error(request, f"Error adding item: {str(e)}")
                                 continue
 
-                    messages.success(request, f"Sales order {sales_order.order_number} created successfully!")
-                    return redirect('point_of_sale:sales_order_detail', sales_order_id=sales_order.id)
+                    # Finalize the order: update cached_total and decrease inventory
+                    try:
+                        sales_order.finalize_order()
+                        messages.success(request, f"Sales order {sales_order.order_number} created and inventory updated successfully!")
+                        return redirect('point_of_sale:sales_order_detail', sales_order_id=sales_order.id)
+                    except ValidationError as e:
+                        messages.error(request, f"Error finalizing order: {str(e)}")
+                        # Delete the sales order if finalization fails
+                        sales_order.delete()
+                        return render(request, 'point_of_sale/create_sales_order.html', {
+                            'sales_order_form': sales_order_form,
+                            'products': products_json,
+                            'customers': customers,
+                            'employees': employees
+                        })
                     
             except Exception as e:
                 messages.error(request, f"Error creating sales order: {str(e)}")
@@ -236,16 +272,23 @@ def add_order_items(request, sales_order_id):
 def convert_to_invoice(request, sales_order_id):
     sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
     if not hasattr(sales_order, 'invoice'):
-        # Generate a unique invoice number
-        last_invoice = Invoice.objects.order_by('-id').first()
-        next_number = (last_invoice.id + 1) if last_invoice else 1
-        invoice_number = f"INV-{next_number:05d}"
-        
-        invoice = Invoice.objects.create(
-            sales_order=sales_order, 
-            invoice_number=invoice_number
-        )
-        messages.success(request, f"Sales order {sales_order.order_number} has been converted to invoice {invoice_number}!")
+        with transaction.atomic():
+            # Generate a unique invoice number
+            last_invoice = Invoice.objects.order_by('-id').first()
+            next_number = (last_invoice.id + 1) if last_invoice else 1
+            invoice_number = f"INV-{next_number:05d}"
+
+            # Update customer debt when invoice is generated
+            if sales_order.customer and hasattr(sales_order.customer, 'total_debt'):
+                sales_order.customer.total_debt += sales_order.cached_total
+                sales_order.customer.save()
+            
+            invoice = Invoice.objects.create(
+                sales_order=sales_order, 
+                invoice_number=invoice_number
+            )
+            
+            messages.success(request, f"Sales order {sales_order.order_number} has been converted to invoice {invoice_number}! Customer debt updated.")
     else:
         messages.info(request, f"Sales order {sales_order.order_number} is already converted to an invoice.")
     

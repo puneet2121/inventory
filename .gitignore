@@ -1,1 +1,11 @@
-.codiumai
+.vscode
+./venv
+.venv
+./.vscode
+# Python cache files
+__pycache__/
+*.pyc
+
+# JetBrains IDE files
+.idea/
+*.iml

@@ -18,7 +18,7 @@ class SalesOrder(models.Model):
                                      choices=[('walk_in', 'Walk-in Customer'), ('registered', 'Registered Customer')],
                                      default='walk_in')
     employee = models.ForeignKey(EmployeeProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
-
+    location = models.CharField(max_length=100, default='Main Store')  # Add default location
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='draft')
     note = models.TextField(blank=True, null=True)
     order_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
@@ -131,18 +131,4 @@ class Payment(models.Model):
         db_table = 'payment'
 
 
-class CustomerDebt(models.Model):
-    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="debt")
 
-    @property
-    def total_debt(self):
-        sales_orders = self.customer.sales_orders.all()
-        debt = sum(order.total_price - sum(payment.amount for payment in order.invoice.payments.all())
-                   for order in sales_orders if hasattr(order, 'invoice'))
-        return debt
-
-    def __str__(self):
-        return f"Debt for {self.customer.name}: {self.total_debt}"
-
-    class Meta:
-        db_table = 'customer_debt'

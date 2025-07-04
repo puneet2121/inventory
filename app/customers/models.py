@@ -20,10 +20,18 @@ class Customer(models.Model):
         return self.name
 
 
-class CustomerDebt(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    debt_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+class CustomerBalance(models.Model):
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="debt")
+    total_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    @property
+    def total_bal(self):
+        sales_orders = self.customer.sales_orders.all()
+        total_balance = sum(order.total_price - sum(payment.amount for payment in order.invoice.payments.all())
+                            for order in sales_orders if hasattr(order, 'invoice'))
+        return total_balance
 
     def __str__(self):
-        return f"Debt for {self.customer.name}"
+        return f"Debt for {self.customer.name}: {self.total_bal}"
 
+    class Meta:
+        db_table = 'customer_balance'

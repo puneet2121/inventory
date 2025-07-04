@@ -99,3 +99,28 @@ This phase integrates POS weighing support, platform syncs, and enhanced locatio
 1. **Clone Repository**
    ```bash
    git clone https://github.com/username/repo-name.git
+
+
+
+1. CREATE SALES ORDER
+   ├── Save SalesOrder record
+   ├── Create OrderItem records
+   ├── Call finalize_order():
+   │   ├── Check inventory availability
+   │   ├── Deduct inventory quantities
+   │   ├── Calculate and set cached_total
+   │   └── Set status = 'completed'
+   └── Redirect to order detail
+
+2. CONVERT TO INVOICE
+   ├── Generate unique invoice number
+   ├── Update customer.total_debt += cached_total
+   ├── Create Invoice record
+   └── Show success message
+
+3. EDIT SALES ORDER (if not invoiced)
+   ├── Reset status to 'draft' if needed
+   ├── Delete existing order items
+   ├── Create new order items
+   ├── Call finalize_order() again
+   └── Update inventory accordingly
