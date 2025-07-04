@@ -57,12 +57,13 @@ INSTALLED_APPS = [
 INSTALLED_APPS += [
     'crispy_forms',
     'crispy_bootstrap5',
-    'storages',
+    # 'storages',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -118,7 +119,6 @@ USE_TZ = True
 
 STATIC_URL = os.getenv('DJANGO_STATIC_URL', '/static/')
 
-
 if not DEBUG:
     STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 else:
@@ -127,36 +127,38 @@ else:
     ]
 
 
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = "century-auto"
-AWS_S3_REGION_NAME = "us-east-1"
-AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
+# AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+# AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+# AWS_STORAGE_BUCKET_NAME = "century-auto"
+# AWS_S3_REGION_NAME = "us-east-1"
+# AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
+#
+# AWS_S3_OBJECT_PARAMETERS = {
+#     'CacheControl': 'max-age=86400',
+# }
+#
+# AWS_LOCATION = 'https://century-auto.nyc3.digitaloceanspaces.com'
+#
+# AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.nyc3.digitaloceanspaces.com'
+# AWS_DEFAULT_ACL = 'public-read'
+# MEDIA_LOCATION = 'media'
+# MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/'
 
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
+# DEFAULT_FILE_STORAGE = 'app.core.storage_backends.MediaStorage'
 
-AWS_LOCATION = 'https://century-auto.nyc3.digitaloceanspaces.com'
-
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.nyc3.digitaloceanspaces.com'
-AWS_DEFAULT_ACL = 'public-read'
-MEDIA_LOCATION = 'media'
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/'
-
-DEFAULT_FILE_STORAGE = 'app.core.storage_backends.MediaStorage'
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')
-EMAIL_PORT = 587
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = True
-
-RECAPTCHA_SITE_KEY = os.getenv('RECAPTCHA_SITE_KEY')
-RECAPTCHA_SECRET_KEY = os.getenv('RECAPTCHA_SECRET_KEY')
-
+#
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = os.getenv('EMAIL_HOST')
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# EMAIL_USE_TLS = True
+#
+# RECAPTCHA_SITE_KEY = os.getenv('RECAPTCHA_SITE_KEY')
+# RECAPTCHA_SECRET_KEY = os.getenv('RECAPTCHA_SECRET_KEY')
+#
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
