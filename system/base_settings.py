@@ -120,13 +120,13 @@ USE_TZ = True
 STATIC_URL = os.getenv('DJANGO_STATIC_URL', '/static/')
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Your source static files (dev)
-STATIC_ROOT = os.path.join(BASE_DIR, 'public')    # Collected static files (production)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')    # Collected static files (production)
 
 # STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 # AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-# AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+# AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCE SS_KEY")
 # AWS_STORAGE_BUCKET_NAME = "century-auto"
 # AWS_S3_REGION_NAME = "us-east-1"
 # AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
