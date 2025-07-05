@@ -122,7 +122,7 @@ STATIC_URL = os.getenv('DJANGO_STATIC_URL', '/static/')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Your source static files (dev)
 STATIC_ROOT = os.path.join(BASE_DIR, 'public')    # Collected static files (production)
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 # AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
