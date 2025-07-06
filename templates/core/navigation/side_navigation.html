@@ -1,7 +1,10 @@
-<div class="offcanvas offcanvas-start sidebar p-3" tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
-    <h2 class="text-light mb-4">POS System</h2>
-    <ul class="nav flex-column">
-        {% include 'core/navigation/navigation.html' %}
-    </ul>
-    <hr>
+{% load navigation_tags %}
+<div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasSidebarLabel">POS System</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        {% render_navigation %}
+    </div>
 </div>

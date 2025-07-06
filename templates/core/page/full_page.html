@@ -5,27 +5,33 @@
 
 {% block base_page_content %}
     <div class="row">
-          <div class="col-lg-2 col-md-4 d-none d-lg-block bg-dark text-white p-3"
-        style="height: 100vh; position: sticky; top: 0; overflow-y: auto;"
-       tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
-                {% block navigation_side %}
-                    {% render_navigation %}
-                {% endblock %}
+        <!-- Desktop Sidebar -->
+        <div class="col-lg-2 col-md-4 d-none d-lg-block bg-dark text-white p-3 sidebar"
+             style="height: 100vh; position: sticky; top: 0; overflow-y: auto;">
+            {% block navigation_side %}
+                {% render_navigation %}
+            {% endblock %}
         </div>
 
-
+        <!-- Main Content Area -->
         <div class="col">
             <div>
+                <!-- Mobile Header -->
                 <div class="row sticky-top">
                     <div class="col-12 p-0">
-                        <div class="d-lg-none text-end">
+                        <div class="d-lg-none">
                             {% include 'core/navigation/mobile_navigation.html' %}
                         </div>
                     </div>
                 </div>
+                
+                <!-- Page Content -->
                 {% block page_content %}
                 {% endblock %}
             </div>
         </div>
     </div>
+
+    <!-- Mobile Offcanvas Sidebar -->
+    {% include 'core/navigation/side_navigation.html' %}
 {% endblock %}
