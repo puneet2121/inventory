@@ -83,28 +83,35 @@ class OrderItem(models.Model):
 
 
 class Invoice(models.Model):
+    PAYMENT_STATUS_CHOICE = [
+    ('unpaid', 'Unpaid'),
+    ('partially_paid', 'Partially_paid'),
+    ('paid', 'Paid'),
+]
+
     sales_order = models.OneToOneField(SalesOrder, on_delete=models.CASCADE, related_name="invoice")
     date = models.DateTimeField(auto_now_add=True)
-    is_paid = models.BooleanField(default=False)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICE, default='unpaid')
     invoice_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     cached_paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
-    @property
     def paid_amount(self):
         return sum(payment.amount for payment in self.payments.all())
 
     def update_cached_paid_amount(self):
-        self.cached_paid_amount = sum(p.amount for p in self.payments.all())
+        total_paid = self.paid_amount()
+        self.cached_paid_amount = total_paid
+        self.update_payment_status()
         self.save()
 
-    @property
-    def payment_status(self):
+    def update_payment_status(self):
         total_price = self.sales_order.cached_total
         if self.cached_paid_amount >= total_price:
-            return 'paid'
+            self.payment_status = 'paid'
         elif self.cached_paid_amount > 0:
-            return 'partial'
-        return 'unpaid'
+            self.payment_status = 'partially_paid'
+        else:
+            self.payment_status = 'unpaid'
 
     def __str__(self):
         return f"Invoice #{self.invoice_number or self.id}"

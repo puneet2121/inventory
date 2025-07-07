@@ -24,9 +24,9 @@ def render_navigation():
             'is_collapse': True,
             'submenus': [
                 {'name': 'Customers', 'url': reverse('customers:list_customers')},
-                # {'name': 'Sales Order', 'url': reverse('point_of_sale:pos_view')},
+                {'name': 'Sales Order', 'url': reverse('point_of_sale:sales_order_list')},
                 {'name': 'Packages', 'url': '/packages/'},
-                {'name': 'invoices', 'url': '/invoices/'},
+                {'name': 'Invoices', 'url': reverse('point_of_sale:invoice_list')},
             ]
         },
         {

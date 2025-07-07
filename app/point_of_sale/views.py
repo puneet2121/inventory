@@ -307,84 +307,34 @@ def invoice_detail(request, invoice_id):
 
 
 # Payment Views
+@transaction.atomic
 def add_payment(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
+    customer = invoice.sales_order.customer
+
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
             payment = form.save(commit=False)
             payment.invoice = invoice
             payment.save()
-            return redirect('invoice_detail', invoice_id)
+
+            # Update invoice payment state
+            invoice.update_cached_paid_amount()
+
+            # Update customer account balance
+            if hasattr(customer, 'account_balance') and customer.total_debt is not None:
+                customer.total_debt -= payment.amount
+                customer.save()
+
+            messages.success(request, f"Payment of ₹{payment.amount} recorded.")
+            return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)
+        else:
+            messages.error(request, "Invalid payment input.")
     else:
         form = PaymentForm()
-    return render(request, 'point_of_sale/payment_form.html', {'invoice': invoice, 'form': form})
 
-
-def product_by_barcode(request, barcode):
-    print('jijijji')
-    try:
-        product = Product.objects.get(barcode=barcode)
-        print('jee')
-        return JsonResponse({
-            'id': product.id,
-            'name': product.name,
-            'price': float(product.price),
-            'barcode': product.barcode
-        })
-    except Product.DoesNotExist:
-        return JsonResponse({'error': 'Product not found'}, status=404)
-
-
-@require_http_methods(["GET", "POST"])
-@login_required(login_url='/authentication/login/')
-def quick_checkout(request):
-    if request.method == 'POST':
-        try:
-            with transaction.atomic():
-                customer, _ = Customer.objects.get_or_create(
-                    name="Walk-In",
-                    customer_type='C'
-                )
-                # Create sales order
-                sales_order = SalesOrder.objects.create(
-                    customer=customer,
-                    employee=request.user.employee_profile
-                )
-
-                # Add order items
-                cart_data = json.loads(request.POST.get('cart_data', '[]'))
-                for item in cart_data:
-                    product = Product.objects.get(id=item['product']['id'])
-                    OrderItem.objects.create(
-                        sales_order=sales_order,
-                        product=product,
-                        quantity=item['quantity'],
-                        price=product.price
-                    )
-
-                # Create invoice
-                total_amount = sum(
-                    item['product']['price'] * item['quantity']
-                    for item in cart_data
-                )
-
-                invoice = Invoice.objects.create(
-                    sales_order=sales_order,
-                    is_paid=(request.POST.get('payment_status') == 'paid')
-                )
-
-                # # Create payment if paid
-                # if invoice.is_paid:
-                #     Payment.objects.create(
-                #         invoice=invoice,
-                #         amount=total_amount,
-                #         payment_method='cash'
-                #     )
-
-                return redirect('point_of_sale:create_sales_order')
-
-        except Exception as e:
-            return render(request, 'error.html', {'error': str(e)})
-
-    return render(request, 'point_of_sale/quick_checkout.html')
+    return render(request, 'point_of_sale/payment_form.html', {
+        'invoice': invoice,
+        'form': form,
+    })

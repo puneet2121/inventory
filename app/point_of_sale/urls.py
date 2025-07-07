@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-from .views import quick_checkout, product_by_barcode
 
 app_name = 'point_of_sale'
 
@@ -15,6 +14,4 @@ urlpatterns = [
     path('invoices/', views.invoice_list, name='invoice_list'),
     path('invoices/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<int:invoice_id>/add-payment/', views.add_payment, name='add_payment'),
-    path('quick-checkout/', quick_checkout, name='quick_checkout'),
-    path('api/products/<str:barcode>/', product_by_barcode, name='product_by_barcode'),
 ]
