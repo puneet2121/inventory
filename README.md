@@ -124,3 +124,4 @@ This phase integrates POS weighing support, platform syncs, and enhanced locatio
    ├── Create new order items
    ├── Call finalize_order() again
    └── Update inventory accordingly
+https://coolors.co/4f46e5-f59e0b-f3f4f6-ffffff-3f3f46-d1d5db-f97316
