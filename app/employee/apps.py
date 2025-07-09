@@ -7,5 +7,5 @@ class EmployeeConfig(AppConfig):
     label = 'employee'
 
     def ready(self):
-        pass
+        import app.employee.signals
 

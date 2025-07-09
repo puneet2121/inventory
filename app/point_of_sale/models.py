@@ -3,6 +3,7 @@ from django.db import models, transaction
 from app.employee.models import EmployeeProfile
 from app.inventory.models import Inventory, Product
 from app.customers.models import Customer
+from django.contrib.auth.models import User
 
 ORDER_STATUS_CHOICES = [
     ('draft', 'Draft'),
@@ -12,12 +13,14 @@ ORDER_STATUS_CHOICES = [
 
 
 class SalesOrder(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name="sales_orders")
     created_at = models.DateTimeField(auto_now_add=True)
     customer_type = models.CharField(max_length=20,
                                      choices=[('walk_in', 'Walk-in Customer'), ('registered', 'Registered Customer')],
                                      default='walk_in')
-    employee = models.ForeignKey(EmployeeProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="sales_orders")
+    employee = models.ForeignKey(EmployeeProfile, on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name="sales_orders")
     location = models.CharField(max_length=100, default='Main Store')  # Add default location
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='draft')
     note = models.TextField(blank=True, null=True)
@@ -84,10 +87,10 @@ class OrderItem(models.Model):
 
 class Invoice(models.Model):
     PAYMENT_STATUS_CHOICE = [
-    ('unpaid', 'Unpaid'),
-    ('partially_paid', 'Partially_paid'),
-    ('paid', 'Paid'),
-]
+        ('unpaid', 'Unpaid'),
+        ('partially_paid', 'Partially_paid'),
+        ('paid', 'Paid'),
+    ]
 
     sales_order = models.OneToOneField(SalesOrder, on_delete=models.CASCADE, related_name="invoice")
     date = models.DateTimeField(auto_now_add=True)
@@ -95,6 +98,8 @@ class Invoice(models.Model):
     invoice_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     cached_paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_invoice_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='invoices_created')
+    notes = models.TextField(blank=True, null=True)
 
     def paid_amount(self):
         return sum(payment.amount for payment in self.payments.all())
@@ -126,17 +131,28 @@ class Payment(models.Model):
         ('cash', 'Cash'),
         ('upi', 'UPI'),
     ]
+    PAYMENT_TERM_CHOICES = [
+        ('net_30', 'Net 30'),
+        ('net_60', 'Net 60'),
+        ('net_90', 'Net 90'),
+    ]
+    PAYMENT_TYPE_CHOICES = [
+        ('payment', 'Payment'),
+        ('refund', 'Refund'),
+    ]
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES)
     date = models.DateTimeField(auto_now_add=True)
+    reference = models.CharField(max_length=100, blank=True, null=True)
+    payment_term = models.CharField(max_length=10, choices=PAYMENT_TERM_CHOICES, default='net_30')
+    due_date = models.DateField()
+    type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, default='payment')
+    received_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='payments_received')
 
     def __str__(self):
         return f"Payment of {self.amount} for Invoice {self.invoice.invoice_number or self.invoice.id}"
 
     class Meta:
         db_table = 'payment'
-
-
-

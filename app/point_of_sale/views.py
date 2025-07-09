@@ -338,3 +338,4 @@ def add_payment(request, invoice_id):
         'invoice': invoice,
         'form': form,
     })
+
