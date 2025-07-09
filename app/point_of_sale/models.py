@@ -94,6 +94,7 @@ class Invoice(models.Model):
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICE, default='unpaid')
     invoice_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     cached_paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_invoice_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def paid_amount(self):
         return sum(payment.amount for payment in self.payments.all())

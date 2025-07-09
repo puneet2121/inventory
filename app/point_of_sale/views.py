@@ -284,7 +284,8 @@ def convert_to_invoice(request, sales_order_id):
                 sales_order.customer.save()
             
             invoice = Invoice.objects.create(
-                sales_order=sales_order, 
+                sales_order=sales_order,
+                total_price=sales_order.cached_total,
                 invoice_number=invoice_number
             )
             
@@ -323,9 +324,8 @@ def add_payment(request, invoice_id):
             invoice.update_cached_paid_amount()
 
             # Update customer account balance
-            if hasattr(customer, 'account_balance') and customer.total_debt is not None:
-                customer.total_debt -= payment.amount
-                customer.save()
+            customer.total_debt -= payment.amount
+            customer.save()
 
             messages.success(request, f"Payment of ₹{payment.amount} recorded.")
             return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)
