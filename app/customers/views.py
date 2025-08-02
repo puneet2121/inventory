@@ -8,6 +8,7 @@ from app.point_of_sale.models import Payment
 from .models import CustomerFinancialSnapshot
 from decimal import Decimal
 
+
 def add_customer(request):
     if request.method == 'POST':
         form = CustomerForm(request.POST)
