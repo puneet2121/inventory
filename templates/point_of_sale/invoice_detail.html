@@ -65,6 +65,53 @@
         margin-top: 10px;
     }
 
+    .payment-history {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .payment-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .payment-item:last-child {
+        border-bottom: none;
+    }
+
+    .payment-amount {
+        font-weight: bold;
+    }
+
+    .payment-amount.payment {
+        color: #28a745;
+    }
+
+    .payment-amount.refund {
+        color: #dc3545;
+    }
+
+    .payment-method {
+        background: #e9ecef;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+
+    .refund-info {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
 </style>
 {% endblock %}
 
@@ -127,6 +174,49 @@
                 </div>
             </div>
 
+            <!-- Payment and Refund History -->
+            <div class="payment-history">
+                <h5 class="mb-3">
+                    <i class="bi bi-clock-history me-2"></i>Payment & Refund History
+                </h5>
+                
+                {% if payments or refunds %}
+                    {% for payment in payments %}
+                    <div class="payment-item">
+                        <div>
+                            <strong>Payment</strong><br>
+                            <small class="text-muted">{{ payment.date|date:"M d, Y g:i A" }}</small>
+                            {% if payment.reference %}
+                                <br><small class="text-muted">Ref: {{ payment.reference }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="payment-amount payment">+${{ payment.amount|floatformat:2 }}</div>
+                            <span class="payment-method">{{ payment.get_payment_method_display }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% for refund in refunds %}
+                    <div class="payment-item">
+                        <div>
+                            <strong>Refund</strong><br>
+                            <small class="text-muted">{{ refund.date|date:"M d, Y g:i A" }}</small>
+                            {% if refund.reference %}
+                                <br><small class="text-muted">Ref: {{ refund.reference }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="payment-amount refund">-${{ refund.amount|floatformat:2 }}</div>
+                            <span class="payment-method">{{ refund.get_payment_method_display }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted">No payment history</div>
+                {% endif %}
+            </div>
+
         </div>
 
         <div class="col-lg-4">
@@ -139,21 +229,45 @@
                 </div>
 
                 <div class="summary-row">
-                    <span>Amount Paid:</span>
-                    <span>${{ invoice.cached_paid_amount|floatformat:2 }}</span>
+                    <span>Total Paid:</span>
+                    <span>${{ total_paid|floatformat:2 }}</span>
                 </div>
 
+                {% if total_refunded > 0 %}
                 <div class="summary-row">
-                    <span>Balance:</span>
-                    <span>${{ invoice.sales_order.cached_total|floatformat:2 }} - ${{ invoice.cached_paid_amount|floatformat:2 }}</span>
-                </div>payment_status
+                    <span>Total Refunded:</span>
+                    <span class="text-danger">-${{ total_refunded|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+
+                <div class="summary-row">
+                    <span>Net Amount:</span>
+                    <span>${{ total_paid|floatformat:2 }} - ${{ total_refunded|floatformat:2 }} = ${{ available_for_refund|floatformat:2 }}</span>
+                </div>
 
                 <hr>
                 <div class="d-grid gap-2 mt-3">
-                    <a href="{% url 'point_of_sale:add_payment' invoice.id %}" class="btn btn-outline-success">
-                        <i class="bi bi-cash-stack"></i> Add Payment
-                    </a>
+                    {% if invoice.payment_status != 'paid' %}
+                        <a href="{% url 'point_of_sale:add_payment' invoice.id %}" class="btn btn-outline-success">
+                            <i class="bi bi-cash-stack"></i> Add Payment
+                        </a>
+                    {% endif %}
+                    
+                    {% if available_for_refund > 0 %}
+                        <a href="{% url 'point_of_sale:process_refund' invoice.id %}" class="btn btn-outline-warning">
+                            <i class="bi bi-arrow-return-left"></i> Process Refund
+                        </a>
+                    {% endif %}
                 </div>
+
+                {% if available_for_refund > 0 %}
+                <div class="refund-info mt-3">
+                    <small>
+                        <i class="bi bi-info-circle me-1"></i>
+                        <strong>Available for refund:</strong> ${{ available_for_refund|floatformat:2 }}
+                    </small>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

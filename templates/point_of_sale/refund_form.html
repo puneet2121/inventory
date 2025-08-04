@@ -1,0 +1,282 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Process Refund - Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .refund-header {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .invoice-info-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .refund-form-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .amount-info {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+        font-weight: bold;
+        color: #dc3545;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .btn-refund {
+        padding: 12px 30px;
+        font-size: 1.1em;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="refund-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">Process Refund</h1>
+                <p class="mb-0 opacity-75">Invoice #{{ invoice.invoice_number }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'point_of_sale:invoice_detail' invoice.id %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> Back to Invoice
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Invoice Information -->
+            <div class="invoice-info-card">
+                <h5 class="mb-3"><i class="bi bi-receipt me-2"></i>Invoice Details</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Invoice Number:</strong> {{ invoice.invoice_number }}<br>
+                        <strong>Date:</strong> {{ invoice.date|date:"M d, Y" }}<br>
+                        <strong>Customer:</strong> {{ invoice.sales_order.customer.name|default:"Walk-in Customer" }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Order Number:</strong> {{ invoice.sales_order.order_number }}<br>
+                        <strong>Status:</strong> 
+                        <span class="badge {% if invoice.payment_status == 'paid' %}bg-success{% else %}bg-warning{% endif %}">
+                            {{ invoice.get_payment_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refund Amount Information -->
+            <div class="amount-info">
+                <h6 class="mb-3"><i class="bi bi-calculator me-2"></i>Refund Summary</h6>
+                <div class="info-row">
+                    <span>Total Invoice Amount:</span>
+                    <span>${{ invoice.sales_order.cached_total|floatformat:2 }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Total Paid:</span>
+                    <span>${{ total_paid|floatformat:2 }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Total Refunded:</span>
+                    <span>${{ total_refunded|floatformat:2 }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Available for Refund:</span>
+                    <span id="available-amount">${{ available_for_refund|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <!-- Refund Form -->
+            <div class="refund-form-card">
+                <h5 class="mb-4"><i class="bi bi-arrow-return-left me-2"></i>Process Refund</h5>
+                
+                <form method="post" id="refund-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">
+                            <strong>Refund Amount</strong>
+                        </label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.amount.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Maximum refund amount: $<span id="max-refund-amount">{{ available_for_refund|floatformat:2 }}</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.payment_method.id_for_label }}" class="form-label">
+                            <strong>Refund Method</strong>
+                        </label>
+                        {{ form.payment_method }}
+                        {% if form.payment_method.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.payment_method.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.reference.id_for_label }}" class="form-label">
+                            <strong>Reference (Optional)</strong>
+                        </label>
+                        {{ form.reference }}
+                        {% if form.reference.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.reference.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Enter reference number, transaction ID, or any note for this refund
+                        </div>
+                    </div>
+
+                    <!-- Refund Summary Preview -->
+                    <div class="amount-info mt-4" id="refund-preview" style="display: none;">
+                        <h6 class="mb-3"><i class="bi bi-eye me-2"></i>Refund Preview</h6>
+                        <div class="info-row">
+                            <span>Refund Amount:</span>
+                            <span id="refund-amount">$0.00</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Total After Refund:</span>
+                            <span id="total-after-refund">${{ total_paid|floatformat:2 }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Remaining Available:</span>
+                            <span id="remaining-available">${{ available_for_refund|floatformat:2 }}</span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-warning btn-refund">
+                            <i class="bi bi-arrow-return-left me-2"></i>Process Refund
+                        </button>
+                        <a href="{% url 'point_of_sale:invoice_detail' invoice.id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+    const refundPreview = document.getElementById('refund-preview');
+    const refundAmount = document.getElementById('refund-amount');
+    const totalAfterRefund = document.getElementById('total-after-refund');
+    const remainingAvailable = document.getElementById('remaining-available');
+    
+    const totalPaid = parseFloat('{{ total_paid }}');
+    const totalRefunded = parseFloat('{{ total_refunded }}');
+    const availableForRefund = parseFloat('{{ available_for_refund }}');
+    
+    // Set max amount for input
+    amountInput.setAttribute('max', availableForRefund.toFixed(2));
+    
+    function updateRefundPreview() {
+        const refundAmountValue = parseFloat(amountInput.value) || 0;
+        
+        if (refundAmountValue > 0) {
+            refundPreview.style.display = 'block';
+            refundAmount.textContent = '$' + refundAmountValue.toFixed(2);
+            
+            const newTotalAfterRefund = totalPaid - refundAmountValue;
+            const newRemainingAvailable = availableForRefund - refundAmountValue;
+            
+            totalAfterRefund.textContent = '$' + newTotalAfterRefund.toFixed(2);
+            remainingAvailable.textContent = '$' + newRemainingAvailable.toFixed(2);
+            
+            // Change color based on remaining amount
+            if (newRemainingAvailable === 0) {
+                remainingAvailable.style.color = '#dc3545';
+                remainingAvailable.innerHTML = '<strong>$0.00 (FULL REFUND)</strong>';
+            } else {
+                remainingAvailable.style.color = '#28a745';
+            }
+        } else {
+            refundPreview.style.display = 'none';
+        }
+    }
+    
+    // Validate refund amount
+    function validateRefundAmount() {
+        const refundAmountValue = parseFloat(amountInput.value) || 0;
+        
+        if (refundAmountValue > availableForRefund) {
+            amountInput.setCustomValidity('Refund amount cannot exceed the available amount.');
+            return false;
+        } else if (refundAmountValue <= 0) {
+            amountInput.setCustomValidity('Refund amount must be greater than zero.');
+            return false;
+        } else {
+            amountInput.setCustomValidity('');
+            return true;
+        }
+    }
+    
+    amountInput.addEventListener('input', function() {
+        updateRefundPreview();
+        validateRefundAmount();
+    });
+    
+    amountInput.addEventListener('blur', validateRefundAmount);
+    
+    // Form submission validation
+    document.getElementById('refund-form').addEventListener('submit', function(e) {
+        if (!validateRefundAmount()) {
+            e.preventDefault();
+            amountInput.reportValidity();
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -102,7 +102,15 @@ class Invoice(models.Model):
     notes = models.TextField(blank=True, null=True)
 
     def paid_amount(self):
-        return sum(payment.amount for payment in self.payments.all())
+        total_payments = self.payments.filter(type='payment').aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        total_refunds = self.payments.filter(type='refund').aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        return total_payments - total_refunds
 
     def update_cached_paid_amount(self):
         total_paid = self.paid_amount()
@@ -112,9 +120,21 @@ class Invoice(models.Model):
 
     def update_payment_status(self):
         total_price = self.sales_order.cached_total
-        if self.cached_paid_amount >= total_price:
+        
+        # Calculate net paid amount (payments - refunds)
+        total_payments = self.payments.filter(type='payment').aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        total_refunds = self.payments.filter(type='refund').aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        net_paid_amount = total_payments - total_refunds
+        
+        if net_paid_amount >= total_price:
             self.payment_status = 'paid'
-        elif self.cached_paid_amount > 0:
+        elif net_paid_amount > 0:
             self.payment_status = 'partially_paid'
         else:
             self.payment_status = 'unpaid'

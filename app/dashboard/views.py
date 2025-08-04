@@ -1,10 +1,12 @@
 from django.shortcuts import render
 from django.utils import timezone
 from datetime import timedelta
+from django.contrib.auth.decorators import login_required
 from app.point_of_sale.models import SalesOrder, OrderItem, Product
 from app.inventory.models import Product, Inventory
 
 
+@login_required(login_url='/authentication/login/')
 def dashboard_view(request):
     # Sales for today
     today = timezone.now().date()

@@ -10,9 +10,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
+from django.db import transaction
+from django.db import models
 
 from .models import SalesOrder, OrderItem, Invoice, Payment
-from .forms import SalesOrderForm, OrderItemForm, PaymentForm
+from .forms import SalesOrderForm, OrderItemForm, PaymentForm, RefundForm
 from django.db import transaction
 
 from ..customers.models import Customer
@@ -298,13 +300,132 @@ def convert_to_invoice(request, sales_order_id):
 
 # Invoice Views
 def invoice_list(request):
-    invoices = Invoice.objects.all()
+    invoices = Invoice.objects.all().select_related('sales_order', 'sales_order__customer')
+    
+    # Calculate payment and refund totals for each invoice
+    for invoice in invoices:
+        total_paid = invoice.payments.filter(type='payment').aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        total_refunded = invoice.payments.filter(type='refund').aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        invoice.net_paid = total_paid - total_refunded
+        invoice.total_paid = total_paid
+        invoice.total_refunded = total_refunded
+        invoice.has_refunds = total_refunded > 0
+    
     return render(request, 'point_of_sale/invoice_list.html', {'invoices': invoices})
+
+
+@transaction.atomic
+def process_refund(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    customer = invoice.sales_order.customer
+
+    # Check if invoice has been paid
+    if invoice.payment_status == 'unpaid':
+        messages.error(request, "Cannot process refund for unpaid invoice.")
+        return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)
+
+    # Calculate available amount for refund
+    total_paid = invoice.payments.filter(type='payment').aggregate(
+        total=models.Sum('amount')
+    )['total'] or 0
+    
+    total_refunded = invoice.payments.filter(type='refund').aggregate(
+        total=models.Sum('amount')
+    )['total'] or 0
+    
+    available_for_refund = total_paid - total_refunded
+
+    if available_for_refund <= 0:
+        messages.error(request, "No amount available for refund.")
+        return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)
+
+    if request.method == 'POST':
+        print("POST data received:", request.POST)
+        form = RefundForm(request.POST, invoice=invoice)
+        print("Form created with data:", form.data)
+        print("Form is bound:", form.is_bound)
+        
+        if form.is_valid():
+            print("Form is valid")
+            try:
+                refund = form.save(commit=False)
+                refund.invoice = invoice
+                refund.type = 'refund'
+                refund.received_by = request.user
+                print("About to save refund:", refund)
+                refund.save()
+                print("Refund saved successfully")
+
+                # Update invoice payment state
+                invoice.update_cached_paid_amount()
+
+                # Update customer account balance (increase debt for refund)
+                if customer:
+                    customer.total_debt += refund.amount
+                    customer.save()
+
+                messages.success(request, f"Refund of ₹{refund.amount} processed successfully.")
+                return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)
+            except Exception as e:
+                print("Exception occurred:", str(e))
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f"Error processing refund: {str(e)}")
+        else:
+            print("Form is not valid")
+            print("Form errors:", form.errors)
+            print("Form data:", request.POST)
+            for field, errors in form.errors.items():
+                print(f"Field {field} errors: {errors}")
+            messages.error(request, "Invalid refund input. Please check the form and try again.")
+    else:
+        print("GET request - creating new form")
+        form = RefundForm(invoice=invoice)
+        print("Form fields:", list(form.fields.keys()))
+        for field_name, field in form.fields.items():
+            print(f"Field {field_name}: {field}")
+
+    return render(request, 'point_of_sale/refund_form.html', {
+        'invoice': invoice,
+        'form': form,
+        'total_paid': total_paid,
+        'total_refunded': total_refunded,
+        'available_for_refund': available_for_refund,
+    })
 
 
 def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
-    return render(request, 'point_of_sale/invoice_detail.html', {'invoice': invoice})
+    
+    # Calculate payment and refund totals
+    total_paid = invoice.payments.filter(type='payment').aggregate(
+        total=models.Sum('amount')
+    )['total'] or 0
+    
+    total_refunded = invoice.payments.filter(type='refund').aggregate(
+        total=models.Sum('amount')
+    )['total'] or 0
+    
+    available_for_refund = total_paid - total_refunded
+    
+    # Get payment and refund history
+    payments = invoice.payments.filter(type='payment').order_by('-date')
+    refunds = invoice.payments.filter(type='refund').order_by('-date')
+    
+    return render(request, 'point_of_sale/invoice_detail.html', {
+        'invoice': invoice,
+        'total_paid': total_paid,
+        'total_refunded': total_refunded,
+        'available_for_refund': available_for_refund,
+        'payments': payments,
+        'refunds': refunds,
+    })
 
 
 # Payment Views
@@ -318,14 +439,17 @@ def add_payment(request, invoice_id):
         if form.is_valid():
             payment = form.save(commit=False)
             payment.invoice = invoice
+            payment.type = 'payment'
+            payment.received_by = request.user
             payment.save()
 
             # Update invoice payment state
             invoice.update_cached_paid_amount()
 
             # Update customer account balance
-            customer.total_debt -= payment.amount
-            customer.save()
+            if customer:
+                customer.total_debt -= payment.amount
+                customer.save()
 
             messages.success(request, f"Payment of ₹{payment.amount} recorded.")
             return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)

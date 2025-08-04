@@ -16,9 +16,28 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+def root_redirect(request):
+    """
+    Root URL redirect handler.
+    - If user is authenticated: redirect to dashboard
+    - If user is not authenticated: redirect to login page
+    """
+    if request.user.is_authenticated:
+        return redirect('dashboard:dashboard')
+    else:
+        return redirect('authentication:login')
 
 urlpatterns = [
+    # Root URL - redirects to dashboard if logged in, login if not
+    path('', root_redirect, name='root'),
+    
+    # Admin interface
     path('admin/', admin.site.urls),
+    
+    # App URLs
     path('inventory/', include("app.inventory.urls"), name="inventory"),
     path('core/', include("app.core.urls"), name="core"),
     path('point_of_sale/', include("app.point_of_sale.urls"), name="point_of_sale"),
@@ -27,5 +46,4 @@ urlpatterns = [
     path('customers/', include('app.customers.urls')),
     path('employee/', include('app.employee.urls')),
     path('purchase/', include('app.purchase.urls')),
-
 ]

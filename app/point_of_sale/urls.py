@@ -14,4 +14,5 @@ urlpatterns = [
     path('invoices/', views.invoice_list, name='invoice_list'),
     path('invoices/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<int:invoice_id>/add-payment/', views.add_payment, name='add_payment'),
+    path('invoices/<int:invoice_id>/refund/', views.process_refund, name='process_refund'),
 ]

@@ -27,7 +27,8 @@
         background-color: #28a745;
         color: white;
     }
-    paid-partial {
+    
+    .paid-partial {
         background-color: #f6b91a;
         color: white;
     }
@@ -42,6 +43,15 @@
         border: 1px solid #ffeeba;
         border-radius: 8px;
         padding: 20px;
+    }
+
+    .refund-indicator {
+        background-color: #dc3545;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        margin-left: 5px;
     }
 </style>
 {% endblock %}
@@ -66,13 +76,24 @@
                         <br><small class="text-muted">{{ invoice.sales_order.customer.name|default:'Walk-in' }}</small>
                     </div>
                     <div class="col-md-2">
-                        <span class="badge paid-badge {% if invoice.payment_status == "paid" %}paid-yes{% else %}paid-no{% endif %}">
-                            {% if invoice.payment_status == "paid" %}Paid{% else %}Unpaid{% endif %}
+                        <span class="badge paid-badge 
+                            {% if invoice.net_paid >= invoice.sales_order.cached_total %}paid-yes
+                            {% elif invoice.net_paid > 0 %}paid-partial
+                            {% else %}paid-no{% endif %}">
+                            {% if invoice.net_paid >= invoice.sales_order.cached_total %}Paid
+                            {% elif invoice.net_paid > 0 %}Partial
+                            {% else %}Unpaid{% endif %}
                         </span>
+                        {% if invoice.has_refunds %}
+                            <span class="refund-indicator">Refunded</span>
+                        {% endif %}
                     </div>
                     <div class="col-md-2">
                         <strong>${{ invoice.sales_order.cached_total|floatformat:2 }}</strong>
                         <br><small class="text-muted">Total</small>
+                        {% if invoice.has_refunds %}
+                            <br><small class="text-danger">Net: ${{ invoice.net_paid|floatformat:2 }}</small>
+                        {% endif %}
                     </div>
                     <div class="col-md-2 text-end">
                         <a href="{% url 'point_of_sale:invoice_detail' invoice.id %}" class="btn btn-sm btn-outline-primary">
