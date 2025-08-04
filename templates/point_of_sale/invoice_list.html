@@ -66,8 +66,8 @@
                         <br><small class="text-muted">{{ invoice.sales_order.customer.name|default:'Walk-in' }}</small>
                     </div>
                     <div class="col-md-2">
-                        <span class="badge paid-badge {% if invoice.is_paid %}paid-yes{% else %}paid-no{% endif %}">
-                            {% if invoice.is_paid %}Paid{% else %}Unpaid{% endif %}
+                        <span class="badge paid-badge {% if invoice.payment_status == "paid" %}paid-yes{% else %}paid-no{% endif %}">
+                            {% if invoice.payment_status == "paid" %}Paid{% else %}Unpaid{% endif %}
                         </span>
                     </div>
                     <div class="col-md-2">

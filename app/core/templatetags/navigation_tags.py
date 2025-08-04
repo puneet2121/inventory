@@ -36,7 +36,7 @@ def render_navigation():
             'is_collapse': True,
             'submenus': [
                 {'name': 'Items', 'url': reverse('inventory:item_list')},
-                {'name': 'Items Groups', 'url': '/orders/'},
+                {'name': 'Item Categories', 'url': reverse('inventory:category_list')},
                 {'name': 'Inventory Adjustments', 'url': '/reports/'},
             ]
         },
@@ -58,6 +58,7 @@ def render_navigation():
             'is_collapse': True,
             'submenus': [
                 {'name': 'Employee List', 'url': reverse('employee:employee_list')},
+                {'name': 'Calendar', 'url': reverse('employee:assignment-calendar')},
             ]
         },
         {
