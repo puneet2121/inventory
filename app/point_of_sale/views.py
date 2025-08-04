@@ -285,8 +285,8 @@ def convert_to_invoice(request, sales_order_id):
             
             invoice = Invoice.objects.create(
                 sales_order=sales_order,
-                total_price=sales_order.cached_total,
-                invoice_number=invoice_number
+                total_invoice_amount=sales_order.cached_total,
+                invoice_number=invoice_number,
             )
             
             messages.success(request, f"Sales order {sales_order.order_number} has been converted to invoice {invoice_number}! Customer debt updated.")

@@ -146,8 +146,8 @@ class Payment(models.Model):
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES)
     date = models.DateTimeField(auto_now_add=True)
     reference = models.CharField(max_length=100, blank=True, null=True)
-    payment_term = models.CharField(max_length=10, choices=PAYMENT_TERM_CHOICES, default='net_30')
-    due_date = models.DateField()
+    # payment_term = models.CharField(max_length=10, choices=PAYMENT_TERM_CHOICES, default='net_30')
+    # due_date = models.DateField()
     type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, default='payment')
     received_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='payments_received')
 

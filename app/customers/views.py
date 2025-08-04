@@ -14,7 +14,7 @@ def add_customer(request):
         form = CustomerForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('list_customers')
+            return redirect('customers:list_customers')
     else:
         form = CustomerForm()
     return render(request, 'customers/page/add_customer.html', {'form': form})
@@ -50,7 +50,7 @@ def update_customer_snapshot_on_payment(sender, instance, **kwargs):
     sales_orders = customer.sales_orders.all()
     total_sales = sum(order.cached_total for order in sales_orders)
 
-    payments = customer.direct_payments.all()  # Advance payments (if allowed)
+    # payments = customer.direct_payments.all()  # Advance payments (if allowed)
     invoice_payments = Payment.objects.filter(invoice__sales_order__customer=customer)
 
     total_paid = sum(p.amount for p in invoice_payments if p.type == 'payment')

@@ -20,22 +20,22 @@ class Customer(models.Model):
         return self.name
 
 
-class CustomerBalance(models.Model):
-    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="debt")
-    total_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-
-    @property
-    def total_bal(self):
-        sales_orders = self.customer.sales_orders.all()
-        total_balance = sum(order.total_price - sum(payment.amount for payment in order.invoice.payments.all())
-                            for order in sales_orders if hasattr(order, 'invoice'))
-        return total_balance
-
-    def __str__(self):
-        return f"Debt for {self.customer.name}: {self.total_bal}"
-
-    class Meta:
-        db_table = 'customer_balance'
+# class CustomerBalance(models.Model):
+#     customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="debt")
+#     total_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+#
+#     @property
+#     def total_bal(self):
+#         sales_orders = self.customer.sales_orders.all()
+#         total_balance = sum(order.total_price - sum(payment.amount for payment in order.invoice.payments.all())
+#                             for order in sales_orders if hasattr(order, 'invoice'))
+#         return total_balance
+#
+#     def __str__(self):
+#         return f"Debt for {self.customer.name}: {self.total_bal}"
+#
+#     class Meta:
+#         db_table = 'customer_balance'
 
 
 # Customer ledger is used for a detailed record of financial transactions between a business and its individual customers.
@@ -61,8 +61,6 @@ class CustomerFinancialSnapshot(models.Model):
     total_payments = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_refunds = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_debt = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    credit_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-
     last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
