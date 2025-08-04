@@ -75,8 +75,8 @@
             <div class="col-md-8">
                 <div class="d-flex align-items-center mb-2">
                     <h1 class="mb-0 me-3">Invoice #{{ invoice.invoice_number }}</h1>
-                    <span class="badge-status {% if invoice.is_paid %}status-paid{% else %}status-unpaid{% endif %}">
-                        {% if invoice.is_paid %}Paid{% else %}Unpaid{% endif %}
+                    <span class="badge-status {% if invoice.payment_status == 'paid' %}status-paid{% else %}status-unpaid{% endif %}">
+                        {% if invoice.payment_status == 'paid' %}Paid{% else %}Unpaid{% endif %}
                     </span>
                 </div>
                 <p class="mb-0 opacity-75">Issued on {{ invoice.date|date:"F d, Y \a\t g:i A" }}</p>
@@ -146,7 +146,7 @@
                 <div class="summary-row">
                     <span>Balance:</span>
                     <span>${{ invoice.sales_order.cached_total|floatformat:2 }} - ${{ invoice.cached_paid_amount|floatformat:2 }}</span>
-                </div>
+                </div>payment_status
 
                 <hr>
                 <div class="d-grid gap-2 mt-3">
