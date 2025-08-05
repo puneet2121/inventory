@@ -121,60 +121,6 @@
         </div>
     </div>
 
-    <!-- Charts Section -->
-    <div class="charts-grid">
-        <!-- Sales Trend Chart -->
-        <div class="chart-card">
-            <div class="chart-header">
-                <h5>Sales Trend (Last 7 Days)</h5>
-                <div class="chart-actions">
-                    <button class="btn btn-sm btn-light" @click="changePeriod('week')" :class="{ 'active': currentPeriod === 'week' }">Week</button>
-                    <button class="btn btn-sm btn-light" @click="changePeriod('month')" :class="{ 'active': currentPeriod === 'month' }">Month</button>
-                    <button class="btn btn-sm btn-light" @click="changePeriod('year')" :class="{ 'active': currentPeriod === 'year' }">Year</button>
-                </div>
-            </div>
-            <div class="chart-body">
-                <canvas id="salesTrendChart"></canvas>
-                <div id="salesChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
-            </div>
-        </div>
-
-        <!-- Top Products Chart -->
-        <div class="chart-card">
-            <div class="chart-header">
-                <h5>Top Selling Products (Last 30 Days)</h5>
-            </div>
-            <div class="chart-body">
-                <canvas id="topProductsChart"></canvas>
-                <div id="productsChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Additional Charts -->
-    <div class="charts-grid">
-        <!-- Category Distribution -->
-        <div class="chart-card">
-            <div class="chart-header">
-                <h5>Sales by Category</h5>
-            </div>
-            <div class="chart-body">
-                <canvas id="categoryChart"></canvas>
-                <div id="categoryChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
-            </div>
-        </div>
-
-        <!-- Monthly Sales -->
-        <div class="chart-card">
-            <div class="chart-header">
-                <h5>Monthly Sales Trend</h5>
-            </div>
-            <div class="chart-body">
-                <canvas id="monthlySalesChart"></canvas>
-                <div id="monthlyChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
-            </div>
-        </div>
-    </div>
 
     <!-- Data Tables Section -->
     <div class="tables-grid">
