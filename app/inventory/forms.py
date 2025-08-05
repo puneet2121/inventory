@@ -27,7 +27,7 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ['name', 'category', 'cost', 'price',
-                  'description', 'barcode', 'model']
+                  'description', 'barcode', 'model', 'company', 'sku']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -42,6 +42,8 @@ class ProductForm(forms.ModelForm):
                     Div('category', css_class='form-group mb-3'),
                     Div('model', css_class='form-group mb-3'),
                     Div('barcode', css_class='form-group mb-3'),
+                    Div('company', css_class='form-group mb-3'),
+                    Div('sku', css_class='form-group mb-3'),
                     css_class='col-md-6'
                 ),
                 # Pricing Section
@@ -65,7 +67,7 @@ class ProductForm(forms.ModelForm):
 class InventoryForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ['quantity','location']
+        fields = ['quantity', 'location']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

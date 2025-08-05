@@ -1,0 +1,169 @@
+{% extends 'reports/base_report.html' %}
+{% load humanize %}
+
+{% block title %}Sales Reports{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1.25rem;
+        transition: all 0.2s;
+    }
+    .nav-tabs .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+    }
+    .nav-tabs .nav-link.active {
+        color: #3498db;
+        background-color: transparent;
+        border-color: #3498db #dee2e6 #fff;
+    }
+    .nav-tabs {
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 1.5rem;
+    }
+    .report-actions {
+        margin-bottom: 1.5rem;
+    }
+    .report-container {
+        min-height: 400px;
+    }
+    .date-range-presets .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .report-tab-content {
+        padding: 1.5rem 0;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    .summary-card {
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block report_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="card-title mb-0">Sales Reports</h5>
+                        <p class="text-muted mb-0">Analyze and export your sales data</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                            <i class="bi bi-download me-1"></i> Export
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Report Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="get" id="reportForm">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="{{ form.report_type.id_for_label }}" class="form-label">Report Type</label>
+                                    {{ form.report_type }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="{{ form.date_range.id_for_label }}" class="form-label">Date Range</label>
+                                    <div class="input-group">
+                                        {{ form.date_range }}
+                                        <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="{{ form.customer.id_for_label }}" class="form-label">Customer</label>
+                                    {{ form.customer }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                                    {{ form.status }}
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="date-range-presets">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary date-preset" data-days="7">Last 7 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary date-preset" data-days="30">Last 30 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary date-preset" data-days="90">Last 90 Days</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary date-preset" data-months="1">This Month</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary date-preset" data-months="-1">Last Month</button>
+                                        </div>
+                                        <div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-funnel me-1"></i> Apply Filters
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Report Tabs -->
+                <ul class="nav nav-tabs" id="reportTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if not active_tab or active_tab == 'summary' %}active{% endif %}" 
+                                id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" 
+                                type="button" role="tab" aria-controls="summary" aria-selected="true">
+                            <i class="bi bi-graph-up me-1"></i> Summary
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'detailed' %}active{% endif %}" 
+                                id="detailed-tab" data-bs-toggle="tab" data-bs-target="#detailed" 
+                                type="button" role="tab" aria-controls="detailed" aria-selected="false">
+                            <i class="bi bi-list-ul me-1"></i> Detailed
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'product_wise' %}active{% endif %}" 
+                                id="product-tab" data-bs-toggle="tab" data-bs-target="#product-wise" 
+                                type="button" role="tab" aria-controls="product-wise" aria-selected="false">
+                            <i class="bi bi-box-seam me-1"></i> Product-wise
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'customer_wise' %}active{% endif %}" 
+                                id="customer-tab" data-bs-toggle="tab" data-bs-target="#customer-wise" 
+                                type="button" role="tab" aria-controls="customer-wise" aria-selected="false">
+                            <i class="bi bi-people me-1"></i> Customer-wise
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content report-tab-content" id="reportTabContent">
+                    <div class="tab-pane fade {% if not active_tab or active_tab == 'summary' %}show active{% endif %}" 
+                         id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                        {% include 'reports/partials/sales_summary.html' %}
+                    </div>
+                    <div class="tab-pane fade {% if active_tab == 'detailed' %}show active{% endif %}" 
+                         id="detailed" role="tabpanel" aria-labelledby="detailed-tab">
+                        {% include 'reports/partials/detailed_sales.html' %}
+                    </div>
+                    <div class="tab-pane fade {% if active_tab == 'product_wise' %}show active{% endif %}" 
+                         id="product-wise" role="tabpanel" aria-labelledby="product-tab">
+                        {% include 'reports/partials/product_wise_sales.html' %}
+                    </div>
+                    <div class="tab-pane fade {% if active_tab == 'customer_wise' %}show active{% endif %}" 
+                         id="customer-wise" role="tabpanel" aria-labelledby="customer-tab">
+                        {% include 'reports/partials/customer_wise_sales.html' %}
+                    </div>
+                </div>

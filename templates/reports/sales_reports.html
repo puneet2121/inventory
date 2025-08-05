@@ -1,0 +1,133 @@
+{% extends 'reports/base_report.html' %}
+
+{% block title %}Sales Reports{% endblock %}
+
+{% block report_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Sales Report</h5>
+                <p class="text-muted">View and analyze your sales data</p>
+                
+                <!-- Date Range Form -->
+                <form method="get" class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            {{ form.start_date.label_tag }}
+                            {{ form.start_date }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.end_date.label_tag }}
+                            {{ form.end_date }}
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                {% if report_data %}
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">Total Sales</h6>
+                                    <h3 class="card-title">₹{{ report_data.total_sales|floatformat:2 }}</h3>
+                                    <p class="card-text small text-muted mb-0">
+                                        {{ report_data.start_date|date:"M d, Y" }} - {{ report_data.end_date|date:"M d, Y" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">Total Orders</h6>
+                                    <h3 class="card-title">{{ report_data.total_orders }}</h3>
+                                    <p class="card-text small text-muted mb-0">
+                                        Completed orders in period
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Selling Products -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">Top Selling Products</h6>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Barcode</th>
+                                        <th class="text-end">Quantity Sold</th>
+                                        <th class="text-end">Total Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in report_data.top_products %}
+                                    <tr>
+                                        <td>{{ product.product__name|default:"Unknown Product" }}</td>
+                                        <td>{{ product.product__barcode|default:"-" }}</td>
+                                        <td class="text-end">{{ product.total_quantity|floatformat:0 }}</td>
+                                        <td class="text-end">₹{{ product.total_revenue|floatformat:2 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4">No sales data available for the selected period</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Sales by Day -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Daily Sales</h6>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th class="text-end">Total Sales</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for day in report_data.sales_by_day %}
+                                    <tr>
+                                        <td>{{ day.date|date:"M d, Y" }}</td>
+                                        <td class="text-end">₹{{ day.total|floatformat:2 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center py-4">No sales data available for the selected period</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="bi bi-graph-up" style="font-size: 3rem; color: #6c757d;"></i>
+                        </div>
+                        <h5>Select a date range to view sales data</h5>
+                        <p class="text-muted">Choose start and end dates above to generate your report</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

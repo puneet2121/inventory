@@ -1,0 +1,140 @@
+{% load humanize %}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Customer-wise Sales</h6>
+        <div class="d-flex">
+            <form method="get" action="" class="d-flex me-2" id="customerSearchForm">
+                <input type="hidden" name="report_type" value="customer_wise">
+                <div class="input-group input-group-sm" style="width: 250px;">
+                    <input type="text" name="search" class="form-control" placeholder="Search customers..." 
+                           value="{{ report_data.search_query|default:'' }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+            <div class="text-muted small ms-2 d-flex align-items-center">
+                {{ report_data.customers.start_index }}-{{ report_data.customers.end_index }} of {{ report_data.customers.paginator.count }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Contact</th>
+                    <th class="text-end">Orders</th>
+                    <th class="text-end">Total Spent</th>
+                    <th class="text-end">Avg. Order Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in report_data.customers %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-sm me-2">
+                                <div class="avatar-text bg-primary text-white rounded-circle">
+                                    {{ customer.customer__name|first|upper }}
+                                </div>
+                            </div>
+                            <div>
+                                <div class="fw-medium">{{ customer.customer__name|truncatechars:30 }}</div>
+                                <small class="text-muted">ID: {{ customer.customer__id|default:"-" }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="small text-muted">
+                            {% if customer.customer__email %}
+                                <div class="text-truncate" style="max-width: 150px;" title="{{ customer.customer__email }}">
+                                    <i class="bi bi-envelope me-1"></i> {{ customer.customer__email }}
+                                </div>
+                            {% endif %}
+                            {% if customer.customer__phone %}
+                                <div class="mt-1">
+                                    <i class="bi bi-telephone me-1"></i> {{ customer.customer__phone }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="text-end">{{ customer.order_count|intcomma }}</td>
+                    <td class="text-end fw-bold">₹{{ customer.total_sales|floatformat:2|intcomma }}</td>
+                    <td class="text-end">₹{{ customer.avg_order_value|floatformat:2|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <div class="text-muted">
+                            {% if report_data.search_query %}
+                                No customers found matching "{{ report_data.search_query }}"
+                            {% else %}
+                                No customer data available for the selected period
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if report_data.customers %}
+            <tfoot class="table-light">
+                <tr>
+                    <th colspan="2" class="text-end">Total:</th>
+                    <th class="text-end">{{ report_data.customers.paginator.count|intcomma }}</th>
+                    <th class="text-end">₹{{ report_data.total_sales|floatformat:2|intcomma }}</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+    
+    {% if report_data.customers.paginator.num_pages > 1 %}
+    <div class="card-footer">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if report_data.customers.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if report_data.search_query %}&search={{ report_data.search_query|urlencode }}{% endif %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ report_data.customers.previous_page_number }}{% if report_data.search_query %}&search={{ report_data.search_query|urlencode }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in report_data.customers.paginator.page_range %}
+                    {% if report_data.customers.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > report_data.customers.number|add:'-3' and num < report_data.customers.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if report_data.search_query %}&search={{ report_data.search_query|urlencode }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if report_data.customers.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ report_data.customers.next_page_number }}{% if report_data.search_query %}&search={{ report_data.search_query|urlencode }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ report_data.customers.paginator.num_pages }}{% if report_data.search_query %}&search={{ report_data.search_query|urlencode }}{% endif %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>

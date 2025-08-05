@@ -16,6 +16,13 @@ class OrderTypeChoices(models.TextChoices):
     WHOLESALE = 'WHOLESALE', 'Wholesale'
 
 
+class Company(models.Model):
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -53,6 +60,9 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     barcode = models.CharField(max_length=100, default='')
     model = models.CharField(max_length=100)
+    sku = models.CharField(max_length=100, blank=True, null=True)
+
+    company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name

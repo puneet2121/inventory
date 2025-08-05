@@ -64,10 +64,13 @@ def render_navigation():
         {
             'icon': 'bi bi-file-earmark-text',
             'text': 'Reports',
-            'url': '/purchases/',
+            'url': reverse('reports:reports_dashboard'),
             'is_collapse': True,
             'submenus': [
-                {'name': 'All Reports', 'url': '/allreports/'},
+                {'name': 'Sales Reports', 'url': reverse('reports:sales_reports')},
+                {'name': 'Inventory Reports', 'url': reverse('reports:inventory_reports')},
+                {'name': 'Employee Reports', 'url': reverse('reports:employee_reports')},
+                {'name': 'Purchase Reports', 'url': reverse('reports:purchases_reports')},
             ]
         },
     ]
