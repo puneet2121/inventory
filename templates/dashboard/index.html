@@ -5,8 +5,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-<!-- Include Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block page_content %}
@@ -18,7 +16,7 @@
                 <i class="bi bi-graph-up"></i>
             </div>
             <div class="stats-info">
-                <h3>${{ today_sales|floatformat:2 }}</h3>
+                <h3>${{ total_sales_today|floatformat:2 }}</h3>
                 <p>Today's Sales</p>
                 <div class="stats-trend {% if today_sales_trend >= 0 %}up{% else %}down{% endif %}">
                     <i class="bi bi-arrow-{% if today_sales_trend >= 0 %}up{% else %}down{% endif %}"></i>
@@ -32,7 +30,7 @@
                 <i class="bi bi-calendar-check"></i>
             </div>
             <div class="stats-info">
-                <h3>${{ monthly_sales|floatformat:2 }}</h3>
+                <h3>${{ total_sales_this_month|floatformat:2 }}</h3>
                 <p>Monthly Sales</p>
                 <div class="stats-trend {% if monthly_sales_trend >= 0 %}up{% else %}down{% endif %}">
                     <i class="bi bi-arrow-{% if monthly_sales_trend >= 0 %}up{% else %}down{% endif %}"></i>
@@ -68,30 +66,112 @@
         </div>
     </div>
 
+    <!-- Additional Stats Row -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-icon bg-secondary">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ total_customers }}</h3>
+                <p>Total Customers</p>
+                <div class="stats-trend">
+                    Active customers
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-icon bg-dark">
+                <i class="bi bi-box"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ total_products }}</h3>
+                <p>Total Products</p>
+                <div class="stats-trend">
+                    In inventory
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-icon bg-purple">
+                <i class="bi bi-tags"></i>
+            </div>
+            <div class="stats-info">
+                <h3>{{ total_categories }}</h3>
+                <p>Categories</p>
+                <div class="stats-trend">
+                    Product categories
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-icon bg-teal">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div class="stats-info">
+                <h3>${{ total_sales_this_month|floatformat:2 }}</h3>
+                <p>This Month</p>
+                <div class="stats-trend">
+                    Current month sales
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts Section -->
     <div class="charts-grid">
         <!-- Sales Trend Chart -->
         <div class="chart-card">
             <div class="chart-header">
-                <h5>Sales Trend</h5>
+                <h5>Sales Trend (Last 7 Days)</h5>
                 <div class="chart-actions">
-                    <button class="btn btn-sm btn-light" @click="changePeriod('week')">Week</button>
-                    <button class="btn btn-sm btn-light" @click="changePeriod('month')">Month</button>
-                    <button class="btn btn-sm btn-light" @click="changePeriod('year')">Year</button>
+                    <button class="btn btn-sm btn-light" @click="changePeriod('week')" :class="{ 'active': currentPeriod === 'week' }">Week</button>
+                    <button class="btn btn-sm btn-light" @click="changePeriod('month')" :class="{ 'active': currentPeriod === 'month' }">Month</button>
+                    <button class="btn btn-sm btn-light" @click="changePeriod('year')" :class="{ 'active': currentPeriod === 'year' }">Year</button>
                 </div>
             </div>
             <div class="chart-body">
                 <canvas id="salesTrendChart"></canvas>
+                <div id="salesChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
             </div>
         </div>
 
         <!-- Top Products Chart -->
         <div class="chart-card">
             <div class="chart-header">
-                <h5>Top Selling Products</h5>
+                <h5>Top Selling Products (Last 30 Days)</h5>
             </div>
             <div class="chart-body">
                 <canvas id="topProductsChart"></canvas>
+                <div id="productsChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Charts -->
+    <div class="charts-grid">
+        <!-- Category Distribution -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5>Sales by Category</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="categoryChart"></canvas>
+                <div id="categoryChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <!-- Monthly Sales -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5>Monthly Sales Trend</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="monthlySalesChart"></canvas>
+                <div id="monthlyChartDebug" style="display: none; color: red; font-size: 12px; margin-top: 10px;"></div>
             </div>
         </div>
     </div>
@@ -102,7 +182,7 @@
         <div class="table-card">
             <div class="table-header">
                 <h5>Recent Orders</h5>
-{#                <a href="{% url 'point_of_sale:order_list' %}" class="btn btn-sm btn-light">View All</a>#}
+                <a href="{% url 'point_of_sale:sales_order_list' %}" class="btn btn-sm btn-light">View All</a>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -118,15 +198,19 @@
                     <tbody>
                         {% for order in recent_orders %}
                         <tr>
-                            <td>#{{ order.id }}</td>
-                            <td>{{ order.customer_name }}</td>
-                            <td>${{ order.total|floatformat:2 }}</td>
+                            <td>#{{ order.order_number|default:order.id }}</td>
+                            <td>{{ order.customer.name|default:"Walk-in Customer" }}</td>
+                            <td>${{ order.cached_total|floatformat:2 }}</td>
                             <td>
                                 <span class="status-badge {{ order.status|lower }}">
                                     {{ order.get_status_display }}
                                 </span>
                             </td>
                             <td>{{ order.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No recent orders</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -145,28 +229,32 @@
                     <thead>
                         <tr>
                             <th>Product</th>
-                            <th>SKU</th>
                             <th>Category</th>
                             <th>Stock</th>
+                            <th>Location</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for product in low_stock_items %}
+                        {% for inventory in low_stock_items %}
                         <tr>
-                            <td>{{ product.name }}</td>
-                            <td>{{ product.sku }}</td>
-                            <td>{{ product.category }}</td>
+                            <td>{{ inventory.product.name }}</td>
+                            <td>{{ inventory.product.category.name|default:"Uncategorized" }}</td>
                             <td>
                                 <span class="stock-badge low">
-                                    {{ product.stock }}
+                                    {{ inventory.quantity }}
                                 </span>
                             </td>
+                            <td>{{ inventory.location }}</td>
                             <td>
-                                <a href="{% url 'inventory:edit_product' product.id %}" class="btn btn-sm btn-light">
+                                <a href="{% url 'inventory:edit_product' inventory.product.id %}" class="btn btn-sm btn-light">
                                     Update Stock
                                 </a>
                             </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No low stock items</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -178,5 +266,18 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Pass Django template data to JavaScript
+window.dashboardData = {
+    salesTrendData: JSON.parse('{{ sales_trend_data_json|escapejs }}'),
+    salesTrendLabels: JSON.parse('{{ sales_trend_labels_json|escapejs }}'),
+    topProducts: JSON.parse('{{ top_products_json|escapejs }}'),
+    categorySales: JSON.parse('{{ category_sales_json|escapejs }}'),
+    monthlySalesData: JSON.parse('{{ monthly_sales_data_json|escapejs }}'),
+    monthlyLabels: JSON.parse('{{ monthly_labels_json|escapejs }}')
+};
+</script>
 <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}
