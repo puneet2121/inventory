@@ -9,6 +9,7 @@ from app.inventory.forms import ProductForm, InventoryImageForm, InventoryForm, 
 from app.inventory.models import Inventory, InventoryImage, Category
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from app.core.decorators import role_required
 from django.http import HttpResponse
 import pandas as pd
 import requests
@@ -16,6 +17,7 @@ from django.shortcuts import render
 
 
 @login_required(login_url='/authentication/login/')
+@role_required(allowed_roles=['admin', 'manager'])
 def index(request):
     context = {
         'message': 'Hello World!'
@@ -30,6 +32,7 @@ from .models import Product, Inventory
 
 
 @login_required(login_url='/authentication/login/')
+@role_required(allowed_roles=['admin', 'manager'])
 def create_or_edit_product_info(request, product_id=None):
     product_instance = get_object_or_404(Product, pk=product_id) if product_id else None
     inventory_instance = None

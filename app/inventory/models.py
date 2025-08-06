@@ -40,17 +40,6 @@ class Category(models.Model):
         return self.product_set.count()
 
 
-class Role(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    permissions = JSONField()
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = 'role'
-
-
 class Product(models.Model):
     name = models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
