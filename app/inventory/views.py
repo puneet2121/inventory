@@ -26,13 +26,13 @@ def index(request):
 
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from .models import Product, Inventory
 
 
 @login_required(login_url='/authentication/login/')
-@role_required(allowed_roles=['admin', 'manager'])
+@permission_required('inventory.view_product', login_url='/authentication/login/',raise_exception=True)
 def create_or_edit_product_info(request, product_id=None):
     product_instance = get_object_or_404(Product, pk=product_id) if product_id else None
     inventory_instance = None
