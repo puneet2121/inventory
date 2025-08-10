@@ -1,14 +1,30 @@
 {% extends 'core/page/full_page.html' %}
-
 {% load crispy_forms_tags %}
-{% block title %}Add Customer{% endblock %}
+
+{% block title %}
+    {% if edit_mode %}
+        Edit Customer
+    {% else %}
+        Add Customer
+    {% endif %}
+{% endblock %}
+
 {% block page_content %}
 <div class="container mt-5">
-    <h2>Add Customer</h2>
+    <h2>
+        {% if edit_mode %}
+            Edit Customer
+        {% else %}
+            Add Customer
+        {% endif %}
+    </h2>
+
     <form method="post">
         {% csrf_token %}
         {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="submit" class="btn btn-primary">
+            {% if edit_mode %}Update{% else %}Submit{% endif %}
+        </button>
     </form>
 </div>
 {% endblock %}

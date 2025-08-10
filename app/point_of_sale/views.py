@@ -320,6 +320,10 @@ def invoice_list(request):
     return render(request, 'point_of_sale/invoice_list.html', {'invoices': invoices})
 
 
+def invoice_print(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    return render(request, 'point_of_sale/invoice_print.html', {'invoice': invoice})
+
 @transaction.atomic
 def process_refund(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)

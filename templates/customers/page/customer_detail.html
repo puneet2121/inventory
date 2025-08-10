@@ -1,0 +1,126 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}Customer Detail - {{ customer.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .snapshot-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .ledger-table th, .ledger-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #ddd;
+    }
+    .ledger-table tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+
+    <h2>{{ customer.name }}</h2>
+    <p><strong>Contact:</strong> {{ customer.contact }}</p>
+    <p><strong>Email:</strong> {{ customer.email|default:"-" }}</p>
+    <p><strong>Shop:</strong> {{ customer.shop|default:"-" }}</p>
+
+    <!-- Snapshot summary -->
+    <div class="snapshot-card">
+        <h4>Financial Summary</h4>
+        {% if snapshot %}
+        <ul>
+            <li><strong>Total Sales:</strong> ${{ snapshot.total_sales|floatformat:2 }}</li>
+            <li><strong>Total Payments:</strong> ${{ snapshot.total_payments|floatformat:2 }}</li>
+            <li><strong>Total Refunds:</strong> ${{ snapshot.total_refunds|floatformat:2 }}</li>
+            <li><strong>Outstanding Debt:</strong> ${{ snapshot.total_debt|floatformat:2 }}</li>
+            <li><strong>Last Updated:</strong> {{ snapshot.last_updated|date:"M d, Y H:i" }}</li>
+        </ul>
+        {% else %}
+        <p>No financial data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Ledger transaction history -->
+    <h4>Transaction History</h4>
+    {% if ledger_entries %}
+    <table class="table ledger-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in ledger_entries %}
+            <tr>
+                <td>{{ entry.date|date:"M d, Y H:i" }}</td>
+                <td>
+                    {% if entry.type == 'debit' %}
+                        <span class="text-danger">Debit</span>
+                    {% else %}
+                        <span class="text-success">Credit</span>
+                    {% endif %}
+                </td>
+                <td>${{ entry.amount|floatformat:2 }}</td>
+                <td>{{ entry.description|default:"-" }}</td>
+                <td>
+    {% if entry.reference %}
+        {% if 'invoice' in entry.description|lower %}
+            <a href="{% url 'point_of_sale:invoice_detail' entry.reference %}">{{ entry.reference }}</a>
+        {% elif 'payment' in entry.description|lower %}
+            <a href="{% url 'point_of_sale:payment_detail' entry.reference %}">{{ entry.reference }}</a>
+        {% else %}
+            {{ entry.reference }}
+        {% endif %}
+    {% else %}
+        -
+    {% endif %}
+</td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No transactions recorded for this customer.</p>
+    {% endif %}
+
+</div>
+    <!-- Pagination -->
+<nav aria-label="Ledger pagination">
+    <ul class="pagination">
+        {% if ledger_entries.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ ledger_entries.previous_page_number }}&q={{ search_query }}&start_date={{ start_date }}&end_date={{ end_date }}">Previous</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+
+        {% for num in ledger_entries.paginator.page_range %}
+            {% if num == ledger_entries.number %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > ledger_entries.number|add:'-5' and num < ledger_entries.number|add:'5' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ search_query }}&start_date={{ start_date }}&end_date={{ end_date }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if ledger_entries.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ ledger_entries.next_page_number }}&q={{ search_query }}&start_date={{ start_date }}&end_date={{ end_date }}">Next</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+    </ul>
+</nav>
+
+{% endblock %}

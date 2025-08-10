@@ -99,6 +99,10 @@
                         <a href="{% url 'point_of_sale:invoice_detail' invoice.id %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-eye"></i> View
                         </a>
+                            <a href="{% url 'point_of_sale:invoice_print' invoice.id %}"
+                               class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="bi bi-printer"></i> Print
+                            </a>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,109 @@
+{% if transactions %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Date / Time</th>
+                <th>Type</th>
+                <th>Reference</th>
+                <th>Related (SO / Inv)</th>
+                <th class="text-end">Amount</th>
+                <th>Balance</th>
+                <th>Received By</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.date|date:"Y-m-d H:i" }}</td>
+
+                <td>
+                    {% if t.type == 'invoice' %}
+                        <span class="badge bg-warning text-dark">Invoice</span>
+                    {% else %}
+                        <span class="badge bg-success">Payment</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if t.link %}
+                        <a href="{{ t.link }}">
+                            {% if t.type == 'payment' %}
+                                {{ t.reference|default:"-" }}
+                            {% else %}
+                                Inv #{{ t.id }}
+                            {% endif %}
+                        </a>
+                    {% else %}
+                        {% if t.type == 'payment' %}
+                            {{ t.reference|default:"-" }}
+                        {% else %}
+                            Inv #{{ t.id }}
+                        {% endif %}
+                    {% endif %}
+                </td>
+
+                <td>
+                    SO #{{ t.so_id|default:"-" }}
+                    {% if t.type == 'payment' %}
+                        / Inv #{{ t.invoice_id }}
+                    {% else %}
+                        / Inv #{{ t.id }}
+                    {% endif %}
+                </td>
+
+                <td class="text-end">
+                    {% if t.type == 'invoice' %}
+                        <span class="text-danger">+${{ t.amount|floatformat:2 }}</span>
+                    {% else %}
+                        <span class="text-success">-${{ t.amount|floatformat:2 }}</span>
+                    {% endif %}
+                </td>
+
+                <td>${{ t.balance|floatformat:2 }}</td>
+
+                <td>
+                    {% if t.type == 'payment' and t.received_by %}
+                        {% if t.received_by.get_full_name %}
+                            {{ t.received_by.get_full_name }}
+                        {% else %}
+                            {{ t.received_by.username }}
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>{{ t.notes|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<div class="pagination-container">
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if transactions.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ transactions.previous_page_number }}">Previous</a>
+                </li>
+            {% endif %}
+            {% for num in transactions.paginator.page_range %}
+                <li class="page-item {% if num == transactions.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endfor %}
+            {% if transactions.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ transactions.next_page_number }}">Next</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% else %}
+<p class="text-muted">No transactions found for this customer.</p>
+{% endif %}

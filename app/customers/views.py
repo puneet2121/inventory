@@ -1,12 +1,16 @@
 from django.db.models import Sum
 from django.shortcuts import render, get_object_or_404, redirect
-from app.customers.models import Customer
+from app.customers.models import Customer, CustomerLedger
+from app.point_of_sale.models import Invoice
 from app.customers.forms import CustomerForm
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from app.point_of_sale.models import Payment
 from .models import CustomerFinancialSnapshot
 from decimal import Decimal
+from django.db.models import Prefetch
+from django.core.paginator import Paginator
+from datetime import datetime, time, date as date_class
 
 
 def add_customer(request):
@@ -18,6 +22,33 @@ def add_customer(request):
     else:
         form = CustomerForm()
     return render(request, 'customers/page/add_customer.html', {'form': form})
+
+
+def edit_customer(request, pk):
+    customer = get_object_or_404(Customer, pk=pk)
+
+    if request.method == 'POST':
+        form = CustomerForm(request.POST, instance=customer)
+        if form.is_valid():
+            form.save()
+            return redirect('customers:list_customers')
+    else:
+        form = CustomerForm(instance=customer)
+
+    return render(request, 'customers/page/add_customer.html', {'form': form, 'edit_mode': True})
+
+
+def customer_detail(request, pk):
+    customer = get_object_or_404(Customer, pk=pk)
+    snapshot = getattr(customer, 'financial_snapshot', None)
+    ledger_entries = CustomerLedger.objects.filter(customer=customer).order_by('-date')
+
+    context = {
+        'customer': customer,
+        'snapshot': snapshot,
+        'ledger_entries': ledger_entries,
+    }
+    return render(request, 'customers/page/customer_detail.html', context)
 
 
 def list_customers(request):

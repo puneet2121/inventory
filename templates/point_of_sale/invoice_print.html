@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .invoice-header { display: flex; justify-content: space-between; }
+        .company-info, .customer-info { width: 48%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table, th, td { border: 1px solid black; }
+        th, td { padding: 8px; text-align: left; }
+        .totals { margin-top: 20px; text-align: right; }
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+
+<div class="no-print" style="text-align: right;">
+    <button onclick="window.print()">🖨 Print</button>
+</div>
+
+<div class="invoice-header">
+    <div class="company-info">
+        <h2>Your Company Name</h2>
+        <p>123 Business Street<br>City, Country</p>
+        <p>Phone: +1 123 456 7890<br>Email: info@company.com</p>
+    </div>
+    <div class="customer-info">
+        <h3>Bill To:</h3>
+        <p>{{ invoice.sales_order.customer.name }}</p>
+        <p>{{ invoice.sales_order.customer.address }}</p>
+        <p>{{ invoice.sales_order.customer.phone }}</p>
+    </div>
+</div>
+
+<hr>
+
+<p><strong>Invoice #:</strong> {{ invoice.invoice_number }}</p>
+<p><strong>Date:</strong> {{ invoice.date|date:"M d, Y" }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in invoice.sales_order.items.all %}
+        <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.price|floatformat:2 }}</td>
+            <td>${{ item.total_price|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="totals">
+    <p><strong>Subtotal:</strong> ${{ invoice.sales_order.cached_total|floatformat:2 }}</p>
+    <p><strong>Paid:</strong> ${{ invoice.net_paid|floatformat:2 }}</p>
+    <p><strong>Balance:</strong> ${{ invoice.balance_due|floatformat:2 }}</p>
+</div>
+
+</body>
+</html>
