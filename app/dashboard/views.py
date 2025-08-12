@@ -1,13 +1,13 @@
 from django.shortcuts import render
 from django.utils import timezone
 from datetime import timedelta, datetime
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
 import json
 from decimal import Decimal
-from app.point_of_sale.models import SalesOrder, OrderItem, Product
-from app.inventory.models import Product as InventoryProduct, Inventory, Category
+from app.point_of_sale.models import SalesOrder, OrderItem
+from app.inventory.models import Product, Inventory, Category
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -33,6 +33,7 @@ def convert_decimal_to_float(obj):
 
 
 @login_required(login_url='/authentication/login/')
+@permission_required('point_of_sale.view_reports', login_url='/authentication/login/', raise_exception=True)
 def sales_trend_api(request, period):
     """API endpoint for sales trend data"""
     today = timezone.now().date()
@@ -107,6 +108,7 @@ def sales_trend_api(request, period):
 
 
 @login_required(login_url='/authentication/login/')
+@permission_required('point_of_sale.view_reports', login_url='/authentication/login/', raise_exception=True)
 def dashboard_view(request):
     today = timezone.now().date()
     yesterday = today - timedelta(days=1)
@@ -511,7 +513,7 @@ def dashboard_view(request):
         
         # Additional Stats
         'total_customers': SalesOrder.objects.filter(status='completed').values('customer').distinct().count(),
-        'total_products': InventoryProduct.objects.count(),
+        'total_products': Product.objects.count(),
         'total_categories': Category.objects.count(),
     }
     

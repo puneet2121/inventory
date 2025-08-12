@@ -3,6 +3,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit, Row, Column, Layout, Div, Button, HTML
 from app.inventory.models import Inventory, InventoryImage, Product
 from .models import Category
+from app.core.tenant_middleware import get_current_tenant
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -27,10 +28,22 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ['name', 'category', 'cost', 'price',
-                  'description', 'barcode', 'model', 'company', 'sku']
+                  'description', 'barcode', 'model', 'sku']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Ensure category dropdown shows current tenant categories and any legacy NULL-tenant ones
+        tenant_id = get_current_tenant()
+        try:
+            # Use base manager to bypass tenant filter so we can include NULLs, then scope explicitly
+            if tenant_id is not None:
+                self.fields['category'].queryset = Category._base_manager.filter(tenant_id__in=[tenant_id, None]).order_by('name')
+            else:
+                # Fallback: show only NULL-tenant categories if no tenant in context
+                self.fields['category'].queryset = Category._base_manager.filter(tenant_id__isnull=True).order_by('name')
+        except Exception:
+            # In case of unexpected issues, default to tenant-aware manager
+            self.fields['category'].queryset = Category.objects.all().order_by('name')
         self.helper = FormHelper()
         self.helper.form_tag = False  # Don't render form tag as we'll handle it in template
         self.helper.layout = Layout(
@@ -42,7 +55,6 @@ class ProductForm(forms.ModelForm):
                     Div('category', css_class='form-group mb-3'),
                     Div('model', css_class='form-group mb-3'),
                     Div('barcode', css_class='form-group mb-3'),
-                    Div('company', css_class='form-group mb-3'),
                     Div('sku', css_class='form-group mb-3'),
                     css_class='col-md-6'
                 ),

@@ -1,7 +1,9 @@
 from django.db import models
 
+from app.core.models import TenantAwareModel
 
-class Customer(models.Model):
+
+class Customer(TenantAwareModel):
     CUSTOMER_TYPE_CHOICES = [
         ('A', 'A - High Priority'),
         ('B', 'B - Medium Priority'),
@@ -20,29 +22,11 @@ class Customer(models.Model):
         return self.name
 
 
-# class CustomerBalance(models.Model):
-#     customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="debt")
-#     total_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-#
-#     @property
-#     def total_bal(self):
-#         sales_orders = self.customer.sales_orders.all()
-#         total_balance = sum(order.total_price - sum(payment.amount for payment in order.invoice.payments.all())
-#                             for order in sales_orders if hasattr(order, 'invoice'))
-#         return total_balance
-#
-#     def __str__(self):
-#         return f"Debt for {self.customer.name}: {self.total_bal}"
-#
-#     class Meta:
-#         db_table = 'customer_balance'
-
-
 # Customer ledger is used for a detailed record of financial transactions between a business and its individual customers.
 # It tracks sales, payments, outstanding balances, and
 # other interactions for each customer, helping businesses manage their accounts receivable and
 # understand customer payment behaviors.
-class CustomerLedger(models.Model):
+class CustomerLedger(TenantAwareModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     date = models.DateTimeField(auto_now_add=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -54,7 +38,7 @@ class CustomerLedger(models.Model):
         return f"{self.type.capitalize()} {self.amount} on {self.date}"
 
 
-class CustomerFinancialSnapshot(models.Model):
+class CustomerFinancialSnapshot(TenantAwareModel):
     customer = models.OneToOneField('Customer', on_delete=models.CASCADE, related_name='financial_snapshot')
 
     total_sales = models.DecimalField(max_digits=15, decimal_places=2, default=0)

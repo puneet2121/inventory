@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 
 def root_redirect(request):
     """
@@ -25,6 +26,9 @@ def root_redirect(request):
     - If user is authenticated: redirect to dashboard
     - If user is not authenticated: redirect to login page
     """
+    # If this is a fresh install (no users), send to signup
+    if User.objects.count() == 0:
+        return redirect('authentication:signup')
     if request.user.is_authenticated:
         return redirect('dashboard:dashboard')
     else:

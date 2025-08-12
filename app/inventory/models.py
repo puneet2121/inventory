@@ -1,4 +1,6 @@
 from django.db import models
+
+from app.core.models import TenantAwareModel, TenantManager
 from app.core.storage_backends import StaticStorage, MediaStorage
 from django.db.models import JSONField
 from django.contrib.auth.models import User
@@ -16,18 +18,14 @@ class OrderTypeChoices(models.TextChoices):
     WHOLESALE = 'WHOLESALE', 'Wholesale'
 
 
-class Company(models.Model):
-    name = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.name
-
-
-class Category(models.Model):
+class Category(TenantAwareModel):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Tenant-aware manager
+    objects = TenantManager()
 
     class Meta:
         verbose_name_plural = "Categories"
@@ -40,7 +38,7 @@ class Category(models.Model):
         return self.product_set.count()
 
 
-class Product(models.Model):
+class Product(TenantAwareModel):
     name = models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     cost = models.DecimalField(max_digits=10, decimal_places=2)
@@ -51,7 +49,8 @@ class Product(models.Model):
     model = models.CharField(max_length=100)
     sku = models.CharField(max_length=100, blank=True, null=True)
 
-    company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True)
+    # Tenant-aware manager
+    objects = TenantManager()
 
     def __str__(self):
         return self.name
@@ -60,17 +59,20 @@ class Product(models.Model):
         db_table = 'product'
 
 
-class Inventory(models.Model):
+class Inventory(TenantAwareModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     location = models.CharField(max_length=100)
     quantity = models.IntegerField()
     last_updated = models.DateTimeField(auto_now=True)
 
+    # Tenant-aware manager
+    objects = TenantManager()
+
     class Meta:
         db_table = 'inventory'
 
 
-class Notification(models.Model):
+class Notification(TenantAwareModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
@@ -83,7 +85,7 @@ class Notification(models.Model):
         db_table = 'notification'
 
 
-class AuditLog(models.Model):
+class AuditLog(TenantAwareModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     action = models.CharField(max_length=50, help_text="Action taken like CREATE, UPDATE, DELETE")
     table_name = models.CharField(max_length=100, help_text="Affected table")
@@ -97,7 +99,7 @@ class AuditLog(models.Model):
         db_table = 'audit_log'
 
 
-class InventoryImage(models.Model):
+class InventoryImage(TenantAwareModel):
     inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
     image = models.FileField()
     image_url = models.URLField()

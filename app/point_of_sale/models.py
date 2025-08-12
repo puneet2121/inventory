@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+
+from app.core.models import TenantAwareModel
 from app.employee.models import EmployeeProfile
 from app.inventory.models import Inventory, Product
 from app.customers.models import Customer
@@ -12,7 +14,7 @@ ORDER_STATUS_CHOICES = [
 ]
 
 
-class SalesOrder(models.Model):
+class SalesOrder(TenantAwareModel):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name="sales_orders")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,9 +64,12 @@ class SalesOrder(models.Model):
 
     class Meta:
         db_table = 'sales_order'
+        permissions = [
+            ("view_reports", "Can view analytics and reports"),
+        ]
 
 
-class OrderItem(models.Model):
+class OrderItem(TenantAwareModel):
     sales_order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
@@ -85,7 +90,7 @@ class OrderItem(models.Model):
         db_table = 'order_item'
 
 
-class Invoice(models.Model):
+class Invoice(TenantAwareModel):
     PAYMENT_STATUS_CHOICE = [
         ('unpaid', 'Unpaid'),
         ('partially_paid', 'Partially_paid'),
@@ -146,7 +151,7 @@ class Invoice(models.Model):
         db_table = 'invoice'
 
 
-class Payment(models.Model):
+class Payment(TenantAwareModel):
     PAYMENT_METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('upi', 'UPI'),

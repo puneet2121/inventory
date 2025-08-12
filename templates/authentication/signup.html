@@ -1,0 +1,69 @@
+{% extends 'core/base/base.html' %}
+{% load static %}
+
+{% block title %}Sign Up - Create Company{% endblock %}
+
+{% block base_content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-12 col-md-6 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="card-title mb-3 text-center">Create your company</h3>
+        <p class="text-muted text-center mb-4">Set up your account by creating a company and admin user</p>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label for="id_company_name" class="form-label">Company Name</label>
+            <input type="text" name="company_name" class="form-control{% if form.company_name.errors %} is-invalid{% endif %}" id="id_company_name" value="{{ form.company_name.value|default:'' }}" required>
+            {% for error in form.company_name.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_username" class="form-label">Username</label>
+            <input type="text" name="username" class="form-control{% if form.username.errors %} is-invalid{% endif %}" id="id_username" value="{{ form.username.value|default:'' }}" required>
+            {% for error in form.username.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_password1" class="form-label">Password</label>
+            <input type="password" name="password1" class="form-control{% if form.password1.errors %} is-invalid{% endif %}" id="id_password1" required>
+            {% for error in form.password1.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_password2" class="form-label">Confirm Password</label>
+            <input type="password" name="password2" class="form-control{% if form.password2.errors %} is-invalid{% endif %}" id="id_password2" required>
+            {% for error in form.password2.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">Create account</button>
+          </div>
+        </form>
+
+        <div class="text-center mt-3">
+          <small>Already have an account? <a href="{% url 'authentication:login' %}">Log in</a></small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

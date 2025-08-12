@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+from app.core.models import TenantAwareModel
 
-class EmployeeProfile(models.Model):
+
+class EmployeeProfile(TenantAwareModel):
     ROLE_CHOICES = [
         ('manager', 'Manager'),
         ('admin', 'Admin'),
@@ -17,7 +19,7 @@ class EmployeeProfile(models.Model):
         return f"{self.user.username} - {self.get_role_display()}"
 
 
-class EmployeeAssignment(models.Model):
+class EmployeeAssignment(TenantAwareModel):
     LOCATION_CHOICES = [
         ('Jalandhar', 'Jalandhar'),
         ('Bhogpur', 'Bhogur'),

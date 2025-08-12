@@ -10,7 +10,20 @@ from .models import EmployeeProfile
 
 @receiver(post_save, sender=EmployeeProfile)
 def assign_role_permissions(sender, instance, created, **kwargs):
-    if created:
-        role = instance.role
-        group, _ = Group.objects.get_or_create(name=role)
-        instance.user.groups.add(group)
+    """Ensure the user's group membership matches their EmployeeProfile.role.
+    - On create: add to the role group
+    - On update: remove from other role groups and add to the current role group
+    """
+    role = instance.role
+    # Ensure the role group exists
+    role_group, _ = Group.objects.get_or_create(name=role)
+
+    # All role groups in our RBAC scheme
+    role_group_names = {"admin", "manager", "salesman"}
+    existing_role_groups = Group.objects.filter(name__in=role_group_names)
+
+    # Remove user from any other role groups
+    instance.user.groups.remove(*existing_role_groups)
+
+    # Add to the current role group
+    instance.user.groups.add(role_group)
