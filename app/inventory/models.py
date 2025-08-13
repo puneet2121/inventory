@@ -48,6 +48,7 @@ class Product(TenantAwareModel):
     barcode = models.CharField(max_length=100, default='')
     model = models.CharField(max_length=100)
     sku = models.CharField(max_length=100, blank=True, null=True)
+    expiry_date = models.DateField(null=True, blank=True)
 
     # Tenant-aware manager
     objects = TenantManager()

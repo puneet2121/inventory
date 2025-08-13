@@ -108,14 +108,14 @@
         </div>
 
         <div class="stats-card">
-            <div class="stats-icon bg-teal">
-                <i class="bi bi-cash-stack"></i>
+            <div class="stats-icon bg-danger">
+                <i class="bi bi-exclamation-triangle"></i>
             </div>
             <div class="stats-info">
-                <h3>${{ total_sales_this_month|floatformat:2 }}</h3>
-                <p>This Month</p>
+                <h3>{{ expiring_soon_count }}</h3>
+                <p>Expiring in 3 Months</p>
                 <div class="stats-trend">
-                    Current month sales
+                    Check expiry dates
                 </div>
             </div>
         </div>
@@ -201,6 +201,60 @@
                         {% empty %}
                         <tr>
                             <td colspan="5" class="text-center text-muted">No low stock items</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Expiring Soon Items (<= 90 days) -->
+        <div class="table-card">
+            <div class="table-header">
+                <h5>Expiring Soon (≤ 90 days)</h5>
+                <a href="{% url 'inventory:item_list' %}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Expiry Date</th>
+                            <th>Days Left</th>
+                            <th>Stock</th>
+                            <th>Location</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in expiring_soon_items %}
+                        <tr>
+                            <td>{{ item.product.name }}</td>
+                            <td>{{ item.product.category.name|default:"Uncategorized" }}</td>
+                            <td>{{ item.product.expiry_date|date:"Y-m-d" }}</td>
+                            <td>
+                                {% if item.days_left is not None %}
+                                    {% if item.days_left <= 0 %}
+                                        <span class="badge bg-danger">Expired</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">{{ item.days_left }} days</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ item.inventory.quantity|default:0 }}</td>
+                            <td>{{ item.inventory.location|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'inventory:edit_product' item.product.id %}" class="btn btn-sm btn-light">
+                                    Update
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No items expiring in the next 90 days</td>
                         </tr>
                         {% endfor %}
                     </tbody>

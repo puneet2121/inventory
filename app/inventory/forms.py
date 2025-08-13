@@ -1,6 +1,6 @@
 from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit, Row, Column, Layout, Div, Button, HTML
+from crispy_forms.layout import Submit, Row, Column, Layout, Div, Button, HTML, Field
 from app.inventory.models import Inventory, InventoryImage, Product
 from .models import Category
 from app.core.tenant_middleware import get_current_tenant
@@ -28,7 +28,10 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ['name', 'category', 'cost', 'price',
-                  'description', 'barcode', 'model', 'sku']
+                  'description', 'barcode', 'model', 'sku', 'expiry_date']
+        widgets = {
+            'expiry_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -56,6 +59,7 @@ class ProductForm(forms.ModelForm):
                     Div('model', css_class='form-group mb-3'),
                     Div('barcode', css_class='form-group mb-3'),
                     Div('sku', css_class='form-group mb-3'),
+                    Div('expiry_date', css_class='form-group mb-3'),
                     css_class='col-md-6'
                 ),
                 # Pricing Section

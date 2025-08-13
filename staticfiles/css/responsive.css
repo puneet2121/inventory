@@ -63,7 +63,7 @@ body {
 }
 
 .nav-item:hover, .nav-item.active {
-    background: var(--secondary-color);
+    background: #4b5563;
     color: var(--primary-color);
 }
 
