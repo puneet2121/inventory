@@ -24,7 +24,7 @@
                 <i class="bi bi-cash"></i>
             </div>
             <div class="stats-info">
-                <h3>${{ total_debt|floatformat:2 }}</h3>
+                <h3>₹{{ total_debt|floatformat:2 }}</h3>
                 <p>Total Outstanding</p>
             </div>
         </div>
@@ -93,7 +93,7 @@
                         <td class="d-none d-lg-table-cell">{{ customer.email|default:'-' }}</td>
                         <td>
                             <span class="{% if customer.total_debt > 0 %}text-danger{% else %}text-success{% endif %}">
-                                ${{ customer.total_debt|floatformat:2 }}
+                                ₹{{ customer.total_debt|floatformat:2 }}
                             </span>
                         </td>
                         <td>

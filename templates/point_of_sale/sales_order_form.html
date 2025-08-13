@@ -63,7 +63,7 @@
 {#                        <option value="">Select a product</option>#}
 {#                        {% for product in products %}#}
 {#                        <option :value="{{ product.id }}" :data-price="{{ product.price }}" :data-barcode="{{ product.barcode }}" x-bind:selected="item.product == '{{ product.id }}'">#}
-{#                            {{ product.name }} - ${{ product.price }}#}
+{#                            {{ product.name }} - ₹{{ product.price }}#}
 {#                        </option>#}
 {#                        {% endfor %}#}
 {#                    </select>#}
@@ -89,7 +89,7 @@
 {##}
 {#        <!-- Display Total -->#}
 {#        <div class="mt-3">#}
-{#            <strong>Total: $<span x-text="total.toFixed(2)"></span></strong>#}
+{#            <strong>Total: ₹<span x-text="total.toFixed(2)"></span></strong>#}
 {#        </div>#}
 {##}
 {#        <!-- Submit button -->#}
@@ -209,7 +209,7 @@
                 </div>
                 <div class="product-info">
                     <h6>{{ product.name }}</h6>
-                    <div class="product-price">${{ product.price|floatformat:2 }}</div>
+                    <div class="product-price">₹{{ product.price|floatformat:2 }}</div>
                     <div class="stock-badge {% if product.stock < 5 %}low-stock{% endif %}">
                         Stock: {{ product.stock }}
                     </div>
@@ -247,14 +247,14 @@
                 <div class="cart-item">
                     <div class="item-info">
                         <h6 x-text="item.name"></h6>
-                        <div class="item-price" x-text="'$' + item.price.toFixed(2)"></div>
+                        <div class="item-price" x-text="'₹' + item.price.toFixed(2)"></div>
                     </div>
                     <div class="item-quantity">
                         <button class="btn btn-sm btn-light" @click="decrementQuantity(index)">-</button>
                         <span x-text="item.quantity"></span>
                         <button class="btn btn-sm btn-light" @click="incrementQuantity(index)">+</button>
                     </div>
-                    <div class="item-total" x-text="'$' + (item.price * item.quantity).toFixed(2)"></div>
+                    <div class="item-total" x-text="'₹' + (item.price * item.quantity).toFixed(2)"></div>
                     <button class="btn btn-sm btn-light" @click="removeItem(index)">
                         <i class="bi bi-x"></i>
                     </button>
@@ -266,15 +266,15 @@
         <div class="cart-summary">
             <div class="summary-row">
                 <span>Subtotal</span>
-                <span x-text="'$' + subtotal.toFixed(2)"></span>
+                <span x-text="'₹' + subtotal.toFixed(2)"></span>
             </div>
             <div class="summary-row">
                 <span>Tax (10%)</span>
-                <span x-text="'$' + tax.toFixed(2)"></span>
+                <span x-text="'₹' + tax.toFixed(2)"></span>
             </div>
             <div class="summary-row total">
                 <span>Total</span>
-                <span x-text="'$' + total.toFixed(2)"></span>
+                <span x-text="'₹' + total.toFixed(2)"></span>
             </div>
         </div>
 
@@ -296,7 +296,7 @@
                 <label>Amount Tendered</label>
                 <input type="number" class="form-control" x-model="amountTendered">
                 <div class="change-amount" x-show="change > 0">
-                    Change: $<span x-text="change.toFixed(2)"></span>
+                    Change: ₹<span x-text="change.toFixed(2)"></span>
                 </div>
             </div>
 

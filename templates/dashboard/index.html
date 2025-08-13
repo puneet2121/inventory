@@ -1,5 +1,6 @@
 {% extends 'core/page/full_page.html' %}
 {% load static %}
+{% load currency %}
 
 {% block title %}Dashboard{% endblock %}
 
@@ -16,7 +17,7 @@
                 <i class="bi bi-graph-up"></i>
             </div>
             <div class="stats-info">
-                <h3>${{ total_sales_today|floatformat:2 }}</h3>
+                <h3>{{ total_sales_today|rupee }}</h3>
                 <p>Today's Sales</p>
                 <div class="stats-trend {% if today_sales_trend >= 0 %}up{% else %}down{% endif %}">
                     <i class="bi bi-arrow-{% if today_sales_trend >= 0 %}up{% else %}down{% endif %}"></i>
@@ -30,7 +31,7 @@
                 <i class="bi bi-calendar-check"></i>
             </div>
             <div class="stats-info">
-                <h3>${{ total_sales_this_month|floatformat:2 }}</h3>
+                <h3>{{ total_sales_this_month|rupee }}</h3>
                 <p>Monthly Sales</p>
                 <div class="stats-trend {% if monthly_sales_trend >= 0 %}up{% else %}down{% endif %}">
                     <i class="bi bi-arrow-{% if monthly_sales_trend >= 0 %}up{% else %}down{% endif %}"></i>
@@ -136,7 +137,7 @@
                         <tr>
                             <th>Order ID</th>
                             <th>Customer</th>
-                            <th>Amount</th>
+                            <th>Amount (₹)</th>
                             <th>Status</th>
                             <th>Date</th>
                         </tr>
@@ -146,7 +147,7 @@
                         <tr>
                             <td>#{{ order.order_number|default:order.id }}</td>
                             <td>{{ order.customer.name|default:"Walk-in Customer" }}</td>
-                            <td>${{ order.cached_total|floatformat:2 }}</td>
+                            <td>{{ order.cached_total|rupee }}</td>
                             <td>
                                 <span class="status-badge {{ order.status|lower }}">
                                     {{ order.get_status_display }}

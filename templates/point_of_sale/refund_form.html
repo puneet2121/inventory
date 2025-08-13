@@ -105,29 +105,29 @@
                 <h6 class="mb-3"><i class="bi bi-calculator me-2"></i>Refund Summary</h6>
                 <div class="info-row">
                     <span>Total Invoice Amount:</span>
-                    <span>${{ invoice.sales_order.cached_total|floatformat:2 }}</span>
+                    <span>₹{{ invoice.sales_order.cached_total|floatformat:2 }}</span>
                 </div>
                 <div class="info-row">
                     <span>Total Paid:</span>
-                    <span>${{ total_paid|floatformat:2 }}</span>
+                    <span>₹{{ total_paid|floatformat:2 }}</span>
                 </div>
                 <div class="info-row">
                     <span>Total Refunded:</span>
-                    <span>${{ total_refunded|floatformat:2 }}</span>
+                    <span>₹{{ total_refunded|floatformat:2 }}</span>
                 </div>
                 <div class="info-row">
                     <span>Available for Refund:</span>
-                    <span id="available-amount">${{ available_for_refund|floatformat:2 }}</span>
+                    <span id="available-amount">₹{{ available_for_refund|floatformat:2 }}</span>
                 </div>
             </div>
 
             <!-- Refund Form -->
             <div class="refund-form-card">
                 <h5 class="mb-4"><i class="bi bi-arrow-return-left me-2"></i>Process Refund</h5>
-                
+
                 <form method="post" id="refund-form">
                         {% csrf_token %}
-                    
+
                     <div class="form-group">
                         <label for="{{ form.amount.id_for_label }}" class="form-label">
                             <strong>Refund Amount</strong>
@@ -141,7 +141,7 @@
                             </div>
                             {% endif %}
                         <div class="form-text">
-                            Maximum refund amount: $<span id="max-refund-amount">{{ available_for_refund|floatformat:2 }}</span>
+                            Maximum refund amount: ₹<span id="max-refund-amount">{{ available_for_refund|floatformat:2 }}</span>
                         </div>
                     </div>
 
@@ -181,15 +181,15 @@
                         <h6 class="mb-3"><i class="bi bi-eye me-2"></i>Refund Preview</h6>
                         <div class="info-row">
                             <span>Refund Amount:</span>
-                            <span id="refund-amount">$0.00</span>
+                            <span id="refund-amount">₹0.00</span>
                         </div>
                         <div class="info-row">
                             <span>Total After Refund:</span>
-                            <span id="total-after-refund">${{ total_paid|floatformat:2 }}</span>
+                            <span id="total-after-refund">₹{{ total_paid|floatformat:2 }}</span>
                         </div>
                         <div class="info-row">
                             <span>Remaining Available:</span>
-                            <span id="remaining-available">${{ available_for_refund|floatformat:2 }}</span>
+                            <span id="remaining-available">₹{{ available_for_refund|floatformat:2 }}</span>
                         </div>
                     </div>
 
@@ -214,31 +214,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const refundAmount = document.getElementById('refund-amount');
     const totalAfterRefund = document.getElementById('total-after-refund');
     const remainingAvailable = document.getElementById('remaining-available');
-    
+
     const totalPaid = parseFloat('{{ total_paid }}');
     const totalRefunded = parseFloat('{{ total_refunded }}');
     const availableForRefund = parseFloat('{{ available_for_refund }}');
-    
+
     // Set max amount for input
     amountInput.setAttribute('max', availableForRefund.toFixed(2));
-    
+
     function updateRefundPreview() {
         const refundAmountValue = parseFloat(amountInput.value) || 0;
-        
+
         if (refundAmountValue > 0) {
             refundPreview.style.display = 'block';
-            refundAmount.textContent = '$' + refundAmountValue.toFixed(2);
-            
+            refundAmount.textContent = '₹' + refundAmountValue.toFixed(2);
+
             const newTotalAfterRefund = totalPaid - refundAmountValue;
             const newRemainingAvailable = availableForRefund - refundAmountValue;
-            
-            totalAfterRefund.textContent = '$' + newTotalAfterRefund.toFixed(2);
-            remainingAvailable.textContent = '$' + newRemainingAvailable.toFixed(2);
-            
+
+            totalAfterRefund.textContent = '₹' + newTotalAfterRefund.toFixed(2);
+            remainingAvailable.textContent = '₹' + newRemainingAvailable.toFixed(2);
+
             // Change color based on remaining amount
             if (newRemainingAvailable === 0) {
                 remainingAvailable.style.color = '#dc3545';
-                remainingAvailable.innerHTML = '<strong>$0.00 (FULL REFUND)</strong>';
+                remainingAvailable.innerHTML = '<strong>₹0.00 (FULL REFUND)</strong>';
             } else {
                 remainingAvailable.style.color = '#28a745';
             }
@@ -246,11 +246,11 @@ document.addEventListener('DOMContentLoaded', function() {
             refundPreview.style.display = 'none';
         }
     }
-    
+
     // Validate refund amount
     function validateRefundAmount() {
         const refundAmountValue = parseFloat(amountInput.value) || 0;
-        
+
         if (refundAmountValue > availableForRefund) {
             amountInput.setCustomValidity('Refund amount cannot exceed the available amount.');
             return false;
@@ -262,14 +262,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         }
     }
-    
+
     amountInput.addEventListener('input', function() {
         updateRefundPreview();
         validateRefundAmount();
     });
-    
+
     amountInput.addEventListener('blur', validateRefundAmount);
-    
+
     // Form submission validation
     document.getElementById('refund-form').addEventListener('submit', function(e) {
         if (!validateRefundAmount()) {
@@ -279,4 +279,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock %} 
+{% endblock %}

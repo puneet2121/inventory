@@ -34,10 +34,10 @@
         <h4>Financial Summary</h4>
         {% if snapshot %}
         <ul>
-            <li><strong>Total Sales:</strong> ${{ snapshot.total_sales|floatformat:2 }}</li>
-            <li><strong>Total Payments:</strong> ${{ snapshot.total_payments|floatformat:2 }}</li>
-            <li><strong>Total Refunds:</strong> ${{ snapshot.total_refunds|floatformat:2 }}</li>
-            <li><strong>Outstanding Debt:</strong> ${{ snapshot.total_debt|floatformat:2 }}</li>
+            <li><strong>Total Sales:</strong> ₹{{ snapshot.total_sales|floatformat:2 }}</li>
+            <li><strong>Total Payments:</strong> ₹{{ snapshot.total_payments|floatformat:2 }}</li>
+            <li><strong>Total Refunds:</strong> ₹{{ snapshot.total_refunds|floatformat:2 }}</li>
+            <li><strong>Outstanding Debt:</strong> ₹{{ snapshot.total_debt|floatformat:2 }}</li>
             <li><strong>Last Updated:</strong> {{ snapshot.last_updated|date:"M d, Y H:i" }}</li>
         </ul>
         {% else %}
@@ -69,7 +69,7 @@
                         <span class="text-success">Credit</span>
                     {% endif %}
                 </td>
-                <td>${{ entry.amount|floatformat:2 }}</td>
+                <td>₹{{ entry.amount|floatformat:2 }}</td>
                 <td>{{ entry.description|default:"-" }}</td>
                 <td>
     {% if entry.reference %}

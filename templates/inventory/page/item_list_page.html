@@ -149,10 +149,10 @@
         </div>
         <div class="stats-card">
             <div class="stats-icon bg-success">
-                <i class="bi bi-currency-dollar"></i>
+                <i class="bi bi-currency-rupee"></i>
             </div>
             <div class="stats-info">
-                <h3>${{ total_value|floatformat:2 }}</h3>
+                <h3>₹{{ total_value|floatformat:2 }}</h3>
                 <p>Total Value</p>
             </div>
         </div>
@@ -232,7 +232,7 @@
                 <h5>{{ product.name }}</h5>
                 <p class="category">{{ product.category }}</p>
                 <div class="item-info">
-                    <span class="price">${{ product.price|floatformat:2 }}</span>
+                    <span class="price">₹{{ product.price|floatformat:2 }}</span>
                     <span class="stock">Stock: {{ product.stock }}</span>
                 </div>
             </div>
@@ -281,7 +281,7 @@
                         </div>
                     </td>
                     <td>{{ product.category }}</td>
-                    <td>${{ product.price|floatformat:2 }}</td>
+                    <td>₹{{ product.price|floatformat:2 }}</td>
                     <td>
                         <span class="stock-badge {% if product.stock <= 5 %}low{% endif %}">  <!-- Changed condition -->
                             {{ product.stock }}

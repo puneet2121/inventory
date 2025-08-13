@@ -59,10 +59,10 @@
                                @change="updateTotal">
                     </div>
                     <div class="col-3">
-                        $<span x-text="(item.product.price * item.quantity).toFixed(2)"></span>
+                        ₹<span x-text="(item.product.price * item.quantity).toFixed(2)"></span>
                     </div>
                     <div class="col-1">
-                        <button class="btn btn-danger btn-sm" 
+                        <button class="btn btn-danger btn-sm"
                                 @click="removeItem(index)">
                             X
                         </button>
@@ -75,7 +75,7 @@
     <!-- Checkout Section -->
     <div class="fixed-bottom bg-white p-3 border-top">
         <div class="d-flex justify-content-between align-items-center">
-            <h3>Total: $<span x-text="total.toFixed(2)"></span></h3>
+            <h3>Total: ₹<span x-text="total.toFixed(2)"></span></h3>
             <form method="post" @submit.prevent="checkout">
                 {% csrf_token %}
                 <input type="hidden" name="cart_data" :value="JSON.stringify(cart)">

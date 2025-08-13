@@ -164,7 +164,7 @@
                                 <strong>Qty:</strong> {{ item.quantity }}
                             </div>
                             <div class="col-md-3 text-end">
-                                <strong>Total:</strong> ${{ item.total_price }}
+                                <strong>Total:</strong> ₹{{ item.total_price }}
                             </div>
                         </div>
                     </div>
@@ -179,7 +179,7 @@
                 <h5 class="mb-3">
                     <i class="bi bi-clock-history me-2"></i>Payment & Refund History
                 </h5>
-                
+
                 {% if payments or refunds %}
                     {% for payment in payments %}
                     <div class="payment-item">
@@ -191,12 +191,12 @@
                             {% endif %}
                         </div>
                         <div class="text-end">
-                            <div class="payment-amount payment">+${{ payment.amount|floatformat:2 }}</div>
+                            <div class="payment-amount payment">+₹{{ payment.amount|floatformat:2 }}</div>
                             <span class="payment-method">{{ payment.get_payment_method_display }}</span>
                         </div>
                     </div>
                     {% endfor %}
-                    
+
                     {% for refund in refunds %}
                     <div class="payment-item">
                         <div>
@@ -207,7 +207,7 @@
                             {% endif %}
                         </div>
                         <div class="text-end">
-                            <div class="payment-amount refund">-${{ refund.amount|floatformat:2 }}</div>
+                            <div class="payment-amount refund">-₹{{ refund.amount|floatformat:2 }}</div>
                             <span class="payment-method">{{ refund.get_payment_method_display }}</span>
                         </div>
                     </div>
@@ -225,24 +225,24 @@
 
                 <div class="summary-row">
                     <span>Subtotal:</span>
-                    <span>${{ invoice.sales_order.cached_total|floatformat:2 }}</span>
+                    <span>₹{{ invoice.sales_order.cached_total|floatformat:2 }}</span>
                 </div>
 
                 <div class="summary-row">
                     <span>Total Paid:</span>
-                    <span>${{ total_paid|floatformat:2 }}</span>
+                    <span>₹{{ total_paid|floatformat:2 }}</span>
                 </div>
 
                 {% if total_refunded > 0 %}
                 <div class="summary-row">
                     <span>Total Refunded:</span>
-                    <span class="text-danger">-${{ total_refunded|floatformat:2 }}</span>
+                    <span class="text-danger">-₹{{ total_refunded|floatformat:2 }}</span>
                 </div>
                 {% endif %}
 
                 <div class="summary-row">
                     <span>Net Amount:</span>
-                    <span>${{ total_paid|floatformat:2 }} - ${{ total_refunded|floatformat:2 }} = ${{ available_for_refund|floatformat:2 }}</span>
+                    <span>₹{{ total_paid|floatformat:2 }} - ₹{{ total_refunded|floatformat:2 }} = ₹{{ available_for_refund|floatformat:2 }}</span>
                 </div>
 
                 <hr>
@@ -252,7 +252,7 @@
                             <i class="bi bi-cash-stack"></i> Add Payment
                         </a>
                     {% endif %}
-                    
+
                     {% if available_for_refund > 0 %}
                         <a href="{% url 'point_of_sale:process_refund' invoice.id %}" class="btn btn-outline-warning">
                             <i class="bi bi-arrow-return-left"></i> Process Refund
@@ -264,7 +264,7 @@
                 <div class="refund-info mt-3">
                     <small>
                         <i class="bi bi-info-circle me-1"></i>
-                        <strong>Available for refund:</strong> ${{ available_for_refund|floatformat:2 }}
+                        <strong>Available for refund:</strong> ₹{{ available_for_refund|floatformat:2 }}
                     </small>
                 </div>
                 {% endif %}

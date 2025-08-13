@@ -55,13 +55,13 @@
 
                 <td class="text-end">
                     {% if t.type == 'invoice' %}
-                        <span class="text-danger">+${{ t.amount|floatformat:2 }}</span>
+                        <span class="text-danger">+₹{{ t.amount|floatformat:2 }}</span>
                     {% else %}
-                        <span class="text-success">-${{ t.amount|floatformat:2 }}</span>
+                        <span class="text-success">-₹{{ t.amount|floatformat:2 }}</span>
                     {% endif %}
                 </td>
 
-                <td>${{ t.balance|floatformat:2 }}</td>
+                <td>₹{{ t.balance|floatformat:2 }}</td>
 
                 <td>
                     {% if t.type == 'payment' and t.received_by %}

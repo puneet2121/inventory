@@ -56,17 +56,17 @@
         <tr>
             <td>{{ item.product.name }}</td>
             <td>{{ item.quantity }}</td>
-            <td>${{ item.price|floatformat:2 }}</td>
-            <td>${{ item.total_price|floatformat:2 }}</td>
+            <td>₹{{ item.price|floatformat:2 }}</td>
+            <td>₹{{ item.total_price|floatformat:2 }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
 <div class="totals">
-    <p><strong>Subtotal:</strong> ${{ invoice.sales_order.cached_total|floatformat:2 }}</p>
-    <p><strong>Paid:</strong> ${{ invoice.net_paid|floatformat:2 }}</p>
-    <p><strong>Balance:</strong> ${{ invoice.balance_due|floatformat:2 }}</p>
+    <p><strong>Subtotal:</strong> ₹{{ invoice.sales_order.cached_total|floatformat:2 }}</p>
+    <p><strong>Paid:</strong> ₹{{ invoice.net_paid|floatformat:2 }}</p>
+    <p><strong>Balance:</strong> ₹{{ invoice.balance_due|floatformat:2 }}</p>
 </div>
 
 </body>

@@ -185,7 +185,7 @@
                                                 <template x-for="product in item.searchResults" :key="product.id">
                                                     <div class="product-option" @click="selectProduct(index, product)">
                                                         <strong x-text="product.name"></strong><br>
-                                                        <small>Price: $<span x-text="product.price"></span> | Barcode: <span x-text="product.barcode"></span></small>
+                                                        <small>Price: ₹<span x-text="product.price"></span> | Barcode: <span x-text="product.barcode"></span></small>
                                                     </div>
                                                 </template>
                                             </div>
@@ -193,12 +193,12 @@
                                             <input type="hidden" :name="'items-' + index + '-product'" :value="item.product ? item.product.id : ''">
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Quantity -->
                                     <div class="col-md-2">
                                         <label class="form-label">Quantity</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             class="form-control"
                                             x-model="item.quantity"
                                             @input="updateRowTotal(index)"
@@ -207,12 +207,12 @@
                                             step="1"
                                         >
                                     </div>
-                                    
+
                                     <!-- Price -->
                                     <div class="col-md-2">
                                         <label class="form-label">Price</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             class="form-control"
                                             x-model="item.price"
                                             @input="updateRowTotal(index)"
@@ -221,15 +221,15 @@
                                             min="0"
                                         >
                                     </div>
-                                    
+
                                     <!-- Amount -->
                                     <div class="col-md-2">
                                         <label class="form-label">Amount</label>
                                         <div class="form-control-plaintext fw-bold">
-                                            $<span x-text="(item.quantity * item.price).toFixed(2)"></span>
+                                            ₹<span x-text="(item.quantity * item.price).toFixed(2)"></span>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Remove Button -->
                                     <div class="col-md-2">
                                         <label class="form-label">&nbsp;</label>
@@ -242,7 +242,7 @@
                                 </div>
                             </div>
                         </template>
-                        
+
                         <!-- Management Form (required for Django formsets) -->
                         <input type="hidden" name="items-TOTAL_FORMS" :value="items.length">
                         <input type="hidden" name="items-INITIAL_FORMS" value="0">
@@ -256,25 +256,25 @@
             <div class="col-lg-4">
                 <div class="order-summary">
                     <h5 class="mb-3">Order Summary</h5>
-                    
+
                     <div class="summary-row">
                         <span>Items:</span>
                         <span x-text="items.length"></span>
                     </div>
-                    
+
                     <div class="summary-row">
                         <span>Subtotal:</span>
-                        <span>$<span x-text="subtotal.toFixed(2)"></span></span>
+                        <span>₹<span x-text="subtotal.toFixed(2)"></span></span>
                     </div>
-                    
+
                     <div class="summary-row">
                         <span>Tax (0%):</span>
-                        <span>$<span x-text="tax.toFixed(2)"></span></span>
+                        <span>₹<span x-text="tax.toFixed(2)"></span></span>
                     </div>
-                    
+
                     <div class="summary-row total">
                         <span>Total:</span>
-                        <span>$<span x-text="total.toFixed(2)"></span></span>
+                        <span>₹<span x-text="total.toFixed(2)"></span></span>
                     </div>
                     
                     <hr>

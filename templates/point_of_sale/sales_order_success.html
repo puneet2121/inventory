@@ -17,7 +17,7 @@
                     <p class="card-text">
                         <strong>Order Number:</strong> {{ order.order_number }}<br>
                         <strong>Customer:</strong> {{ order.customer.name }}<br>
-                        <strong>Total:</strong> ${{ order.total_price|floatformat:2 }}<br>
+                        <strong>Total:</strong> ₹{{ order.total_price|floatformat:2 }}<br>
                         <strong>Status:</strong> {{ order.get_status_display }}
                     </p>
                     {% endif %}

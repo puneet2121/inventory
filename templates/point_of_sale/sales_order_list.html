@@ -102,7 +102,7 @@
         </div>
         <div class="col-md-3">
             <div class="stats-card text-center">
-                <h4>${{ sales_orders|length|floatformat:2 }}</h4>
+                <h4>₹{{ sales_orders|length|floatformat:2 }}</h4>
                 <p class="mb-0">Total Value</p>
             </div>
         </div>
@@ -171,7 +171,7 @@
                         </div>
                         <div class="col-6">
                             <small class="text-muted">Total</small>
-                            <div class="fw-semibold text-success">${{ order.total_amount|floatformat:2 }}</div>
+                            <div class="fw-semibold text-success">₹{{ order.total_amount|floatformat:2 }}</div>
                         </div>
                     </div>
                     

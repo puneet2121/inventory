@@ -13,9 +13,9 @@
                     <div class="col-md-4 mb-3">
                         <div class="card bg-light">
                             <div class="card-body text-center">
-                                <i class="bi bi-currency-dollar fs-1 text-primary"></i>
+                                <i class="bi bi-currency-rupee fs-1 text-primary"></i>
                                 <h5 class="mt-2">Total Sales</h5>
-                                <h3 class="mb-0" id="totalSales">$0.00</h3>
+                                <h3 class="mb-0" id="totalSales">₹0.00</h3>
                                 <p class="text-muted mb-0" id="salesPeriod">Last 30 days</p>
                             </div>
                         </div>
@@ -74,7 +74,7 @@ $(document).ready(function() {
             url: '{% url "reports:get_sales_summary" %}',
             method: 'GET',
             success: function(response) {
-                $('#totalSales').text('$' + parseFloat(response.total_sales).toFixed(2));
+                $('#totalSales').text('₹' + parseFloat(response.total_sales).toFixed(2));
                 $('#totalOrders').text(response.order_count);
                 $('#salesPeriod').text(response.period);
             }

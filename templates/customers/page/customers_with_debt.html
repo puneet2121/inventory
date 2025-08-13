@@ -24,7 +24,7 @@
                 <td>{{ customer.contact }}</td>
                 <td>{{ customer.email|default:"-" }}</td>
                 <td>{{ customer.shop|default:"-" }}</td>
-                <td>${{ customer.debt }}</td>
+                <td>₹{{ customer.debt }}</td>
             </tr>
             {% endfor %}
         </tbody>

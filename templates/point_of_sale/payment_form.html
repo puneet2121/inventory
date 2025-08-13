@@ -105,25 +105,25 @@
                 <h6 class="mb-3"><i class="bi bi-calculator me-2"></i>Payment Summary</h6>
                 <div class="info-row">
                     <span>Total Amount:</span>
-                    <span>${{ invoice.sales_order.cached_total|floatformat:2 }}</span>
+                    <span>₹{{ invoice.sales_order.cached_total|floatformat:2 }}</span>
                 </div>
                 <div class="info-row">
                     <span>Amount Paid:</span>
-                    <span>${{ invoice.cached_paid_amount|floatformat:2 }}</span>
+                    <span>₹{{ invoice.cached_paid_amount|floatformat:2 }}</span>
                 </div>
                 <div class="info-row">
                     <span>Balance Due:</span>
-                    <span id="balance-amount">${{ invoice.sales_order.cached_total|floatformat:2 }}</span>
+                    <span id="balance-amount">₹{{ invoice.sales_order.cached_total|floatformat:2 }}</span>
                 </div>
             </div>
 
             <!-- Payment Form -->
             <div class="payment-form-card">
                 <h5 class="mb-4"><i class="bi bi-cash-stack me-2"></i>Add New Payment</h5>
-                
+
                 <form method="post" id="payment-form">
                     {% csrf_token %}
-                    
+
                     <div class="form-group">
                         <label for="{{ form.amount.id_for_label }}" class="form-label">
                             <strong>Payment Amount</strong>
@@ -137,7 +137,7 @@
                             </div>
                         {% endif %}
                         <div class="form-text">
-                            Maximum amount: $<span id="max-amount">{{ invoice.sales_order.cached_total|floatformat:2 }}</span>
+                            Maximum amount: ₹<span id="max-amount">{{ invoice.sales_order.cached_total|floatformat:2 }}</span>
                         </div>
                     </div>
 
@@ -160,15 +160,15 @@
                         <h6 class="mb-3"><i class="bi bi-eye me-2"></i>Payment Preview</h6>
                         <div class="info-row">
                             <span>Current Payment:</span>
-                            <span id="current-payment">$0.00</span>
+                            <span id="current-payment">₹0.00</span>
                         </div>
                         <div class="info-row">
                             <span>Total After Payment:</span>
-                            <span id="total-after-payment">${{ invoice.cached_paid_amount|floatformat:2 }}</span>
+                            <span id="total-after-payment">₹{{ invoice.cached_paid_amount|floatformat:2 }}</span>
                         </div>
                         <div class="info-row">
                             <span>Remaining Balance:</span>
-                            <span id="remaining-balance">${{ invoice.sales_order.cached_total|floatformat:2 }}</span>
+                            <span id="remaining-balance">₹{{ invoice.sales_order.cached_total|floatformat:2 }}</span>
                         </div>
                     </div>
 
@@ -193,35 +193,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentPayment = document.getElementById('current-payment');
     const totalAfterPayment = document.getElementById('total-after-payment');
     const remainingBalance = document.getElementById('remaining-balance');
-    
+
     const totalAmount = parseFloat('{{ invoice.sales_order.cached_total }}');
     const paidAmount = parseFloat('{{ invoice.cached_paid_amount }}');
     const balanceAmount = totalAmount - paidAmount;
-    
+
     // Update balance display
-    document.getElementById('balance-amount').textContent = '$' + balanceAmount.toFixed(2);
+    document.getElementById('balance-amount').textContent = '₹' + balanceAmount.toFixed(2);
     document.getElementById('max-amount').textContent = balanceAmount.toFixed(2);
-    
+
     // Set max amount for input
     amountInput.setAttribute('max', balanceAmount.toFixed(2));
-    
+
     function updatePaymentPreview() {
         const paymentAmount = parseFloat(amountInput.value) || 0;
-        
+
         if (paymentAmount > 0) {
             paymentPreview.style.display = 'block';
-            currentPayment.textContent = '$' + paymentAmount.toFixed(2);
-            
+            currentPayment.textContent = '₹' + paymentAmount.toFixed(2);
+
             const newTotalPaid = paidAmount + paymentAmount;
             const newBalance = Math.max(0, totalAmount - newTotalPaid);
-            
-            totalAfterPayment.textContent = '$' + newTotalPaid.toFixed(2);
-            remainingBalance.textContent = '$' + newBalance.toFixed(2);
-            
+
+            totalAfterPayment.textContent = '₹' + newTotalPaid.toFixed(2);
+            remainingBalance.textContent = '₹' + newBalance.toFixed(2);
+
             // Change color based on balance
             if (newBalance === 0) {
                 remainingBalance.style.color = '#28a745';
-                remainingBalance.innerHTML = '<strong>$0.00 (PAID IN FULL)</strong>';
+                remainingBalance.innerHTML = '<strong>₹0.00 (PAID IN FULL)</strong>';
             } else {
                 remainingBalance.style.color = '#dc3545';
             }

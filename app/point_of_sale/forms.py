@@ -221,7 +221,7 @@ class RefundForm(forms.ModelForm):
             
             if amount > available_for_refund:
                 raise forms.ValidationError(
-                    f"Refund amount cannot exceed the available amount (${available_for_refund:.2f})."
+                    f"Refund amount cannot exceed the available amount (₹{available_for_refund:.2f})."
                 )
         
         return amount
