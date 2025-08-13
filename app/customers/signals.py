@@ -1,5 +1,5 @@
 # customers/signals.py
-
+from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
@@ -31,7 +31,7 @@ def create_ledger_for_invoice(sender, instance, created, **kwargs):
     if created:
         CustomerLedger.objects.create(
             customer=instance.sales_order.customer,
-            amount=instance.total_amount,
+            amount=instance.total_invoice_amount,
             type='debit',  # Debit means customer owes money
             description=f"Invoice #{instance.id}",
             reference=str(instance.id)
