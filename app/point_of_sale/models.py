@@ -6,6 +6,7 @@ from app.employee.models import EmployeeProfile
 from app.inventory.models import Inventory, Product
 from app.customers.models import Customer
 from django.contrib.auth.models import User
+from app.core.tenant_middleware import get_current_tenant
 
 ORDER_STATUS_CHOICES = [
     ('draft', 'Draft'),
@@ -26,7 +27,7 @@ class SalesOrder(TenantAwareModel):
     location = models.CharField(max_length=100, default='Main Store')  # Add default location
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='draft')
     note = models.TextField(blank=True, null=True)
-    order_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    order_number = models.CharField(max_length=20, blank=True, null=True)
     cached_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     @property
@@ -64,9 +65,60 @@ class SalesOrder(TenantAwareModel):
 
     class Meta:
         db_table = 'sales_order'
+        unique_together = (('tenant_id', 'order_number'),)
         permissions = [
             ("view_reports", "Can view analytics and reports"),
         ]
+
+    def save(self, *args, **kwargs):
+        # Ensure tenant_id is present before generating order number
+        if not self.tenant_id:
+            self.tenant_id = self.tenant_id or get_current_tenant()
+        if not self.order_number:
+            self.order_number = OrderNumberSequence.next_number(self.tenant_id)
+        super().save(*args, **kwargs)
+
+
+class OrderNumberSequence(TenantAwareModel):
+    """Maintains a per-tenant counter for SalesOrder.order_number generation."""
+    last_number = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'order_number_sequence'
+
+    @classmethod
+    def next_number(cls, tenant_id):
+        if not tenant_id:
+            # Fallback to 1 if tenant unknown; still avoids global collisions
+            return f"SO-{1:05d}"
+        with transaction.atomic():
+            seq = cls._base_manager.select_for_update().filter(tenant_id=tenant_id).first()
+            if not seq:
+                seq = cls(tenant_id=tenant_id, last_number=0)
+            seq.last_number += 1
+            seq.save()
+            return f"SO-{seq.last_number:05d}"
+
+
+class InvoiceNumberSequence(TenantAwareModel):
+    """Maintains a per-tenant counter for Invoice.invoice_number generation."""
+    last_number = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'invoice_number_sequence'
+
+    @classmethod
+    def next_number(cls, tenant_id):
+        if not tenant_id:
+            # Fallback to 1 if tenant unknown; still avoids global collisions
+            return f"INV-{1:05d}"
+        with transaction.atomic():
+            seq = cls._base_manager.select_for_update().filter(tenant_id=tenant_id).first()
+            if not seq:
+                seq = cls(tenant_id=tenant_id, last_number=0)
+            seq.last_number += 1
+            seq.save()
+            return f"INV-{seq.last_number:05d}"
 
 
 class OrderItem(TenantAwareModel):
@@ -100,7 +152,7 @@ class Invoice(TenantAwareModel):
     sales_order = models.OneToOneField(SalesOrder, on_delete=models.CASCADE, related_name="invoice")
     date = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICE, default='unpaid')
-    invoice_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    invoice_number = models.CharField(max_length=20, blank=True, null=True)
     cached_paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_invoice_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='invoices_created')
@@ -149,6 +201,14 @@ class Invoice(TenantAwareModel):
 
     class Meta:
         db_table = 'invoice'
+        unique_together = (('tenant_id', 'invoice_number'),)
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id:
+            self.tenant_id = self.tenant_id or get_current_tenant()
+        if not self.invoice_number:
+            self.invoice_number = InvoiceNumberSequence.next_number(self.tenant_id)
+        super().save(*args, **kwargs)
 
 
 class Payment(TenantAwareModel):
