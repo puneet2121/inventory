@@ -45,14 +45,14 @@ def render_navigation(context):
         {
             'icon': 'bi bi-bag-check',
             'text': 'Purchases',
-            'url': '/purchases/',
+            'url': reverse('purchase:purchase_order_list'),
             'is_collapse': True,
             'submenus': [
-                {'name': 'Vendors', 'url': '/vendors/', 'permission': 'purchases.view_vendor'},
-                {'name': 'Purchase Orders', 'url': '/purchaseorder/', 'permission': 'purchases.view_purchaseorder'},
-                {'name': 'Bills', 'url': '/bills/', 'permission': 'purchases.view_bill'},
+                {'name': 'Vendors', 'url': reverse('purchase:vendor_list'), 'permission': 'purchase.view_vendor'},
+                {'name': 'Purchase Orders', 'url': reverse('purchase:purchase_order_list'), 'permission': 'purchase.view_purchaseorder'},
+                {'name': 'Bills', 'url': reverse('purchase:bill_list'), 'permission': 'purchase.view_bill'},
             ],
-            'permission': 'purchases.view_purchaseorder',
+            'permission': 'purchase.view_purchaseorder',
         },
         {
             'icon': 'bi bi-people',

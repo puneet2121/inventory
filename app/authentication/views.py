@@ -38,13 +38,21 @@ def signup_view(request):
         if form.is_valid():
             company_name = form.cleaned_data['company_name']
             username = form.cleaned_data['username']
+            first_name = form.cleaned_data['first_name']
+            last_name = form.cleaned_data['last_name']
             password = form.cleaned_data['password1']
 
             # Create company
             company = Company.objects.create(name=company_name)
 
             # Create user
-            user = User.objects.create_user(username=username, password=password, is_superuser=True)
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                is_superuser=True
+            )
 
             # Create employee profile with admin role and set tenant_id to company.id
             profile = EmployeeProfile(user=user, role='admin')

@@ -1,0 +1,15 @@
+{% extends 'core/page/full_page.html' %}
+{% block title %}Delete Vendor{% endblock %}
+{% block page_content %}
+<h3 class="my-3 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Delete Vendor</h3>
+<div class="card">
+  <div class="card-body">
+    <p>Are you sure you want to delete vendor <strong>{{ vendor.name }}</strong>?</p>
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit"><i class="bi bi-trash3 me-1"></i> Delete</button>
+      <a class="btn btn-secondary" href="{% url 'purchase:vendor_list' %}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

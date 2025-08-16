@@ -1,0 +1,50 @@
+{% extends 'core/page/full_page.html' %}
+{% block title %}Receive Purchase Order{% endblock %}
+{% block page_content %}
+<h3 class="my-3"><i class="bi bi-box-seam me-2"></i>Receive Purchase Order #{{ po.id }}</h3>
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-4"><strong>Vendor:</strong> {{ po.vendor }}</div>
+      <div class="col-md-4"><strong>Location:</strong> {{ po.location }}</div>
+      <div class="col-md-4"><strong>Total:</strong> {{ po.total_amount }}</div>
+    </div>
+    <p class="text-muted mt-2 mb-0">Receiving will increment inventory for all line items and lock the PO.</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Product</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Unit Cost</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in po.items.all %}
+            <tr>
+              <td>{{ item.product.name }}</td>
+              <td class="text-end">{{ item.quantity }}</td>
+              <td class="text-end">{{ item.unit_price }}</td>
+              <td class="text-end">{{ item.subtotal }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-center p-4 text-muted">No items on this Purchase Order.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-success" type="submit"><i class="bi bi-check2-circle me-1"></i> Confirm Receive</button>
+  <a class="btn btn-secondary" href="{% url 'purchase:purchase_order_list' %}">Cancel</a>
+</form>
+{% endblock %}

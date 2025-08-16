@@ -60,11 +60,11 @@
 }
 
 .form-control:hover {
-    border-color: #ff69b4; /* Pink border on hover */
+    border-color: #27a376; /* Pink border on hover */
 }
 
 .form-control:focus {
-    border-color: #ff69b4;
+    border-color: #27a376;
     box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.15);
     outline: none;
 }
@@ -119,8 +119,8 @@ textarea.form-control {
 }
 
 .btn-primary {
-    background-color: #ff69b4;
-    border-color: #ff69b4;
+    background-color: #27a376;
+    border-color: #27a376;
     color: white;
 }
 

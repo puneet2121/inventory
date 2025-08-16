@@ -2,25 +2,27 @@
 
 {% block page_content %}
 <div class="container mt-3" x-data="quickCheckout()">
+    <!-- Lightweight toast/alert -->
+    <div class="alert alert-danger position-fixed top-0 end-0 m-3 shadow" x-show="toast.show" x-text="toast.message" x-transition></div>
     <h2 class="mb-4">Quick Checkout</h2>
-    
+
     <!-- Barcode Scanner Section -->
     <div class="mb-4">
-        <button class="btn btn-primary btn-lg w-100 mb-2" @click="startScanner">
-            Open Barcode Scanner
+        <button class="btn btn-primary btn-lg w-100 mb-2" @click="startScanner" :disabled="scannerActive">
+            Open Barcode Scanner (Ctrl+B)
         </button>
         <div id="barcode-scanner" class="d-none">
             <div id="interactive" class="viewport"></div>
             <button class="btn btn-danger btn-lg w-100 mt-2" @click="stopScanner">
-                Close Scanner
+                Close Scanner (Esc)
             </button>
         </div>
     </div>
 
     <!-- Barcode Input (Manual Entry) -->
     <div class="mb-4">
-        <input type="text" 
-               class="form-control form-control-lg" 
+        <input type="text"
+               class="form-control form-control-lg"
                placeholder="Scan Barcode or Enter Manually"
                x-model="barcode"
                @keyup.enter="addItem"
@@ -30,8 +32,8 @@
     <!-- Quantity Input -->
     <div class="row mb-4" x-show="currentProduct">
         <div class="col-12">
-            <input type="number" 
-                   class="form-control form-control-lg" 
+            <input type="number"
+                   class="form-control form-control-lg"
                    placeholder="Enter Quantity"
                    x-model="quantity"
                    min="1"
@@ -52,7 +54,7 @@
                         <span x-text="item.product.name"></span>
                     </div>
                     <div class="col-3">
-                        <input type="number" 
+                        <input type="number"
                                class="form-control"
                                x-model="item.quantity"
                                min="1"
@@ -83,8 +85,10 @@
                     <option value="paid">Paid Now</option>
                     <option value="unpaid">Pay Later</option>
                 </select>
-                <button type="submit" class="btn btn-success btn-lg">
-                    Complete Checkout
+                <button type="submit" class="btn btn-success btn-lg" :disabled="isSubmitting || cart.length===0">
+                    <span x-show="!isSubmitting">Complete Checkout (Enter)</span>
+                    <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span x-show="isSubmitting">Processing...</span>
                 </button>
             </form>
         </div>
@@ -102,25 +106,80 @@ function quickCheckout() {
         currentProduct: null,
         cart: [],
         total: 0,
+        isSubmitting: false,
+        scannerActive: false,
+        toast: { show: false, message: '' },
+
+        init() {
+            this.loadCart();
+            // Global keyboard shortcuts
+            window.addEventListener('keydown', (e) => this.handleKeys(e));
+        },
+
+        showError(msg) {
+            this.toast.message = msg;
+            this.toast.show = true;
+            setTimeout(() => { this.toast.show = false; }, 2500);
+        },
+
+        persistCart() {
+            try { localStorage.setItem('qc_cart', JSON.stringify(this.cart)); } catch (e) {}
+        },
+        loadCart() {
+            try {
+                const raw = localStorage.getItem('qc_cart');
+                if (raw) {
+                    this.cart = JSON.parse(raw);
+                    this.updateTotal();
+                }
+            } catch (e) {}
+        },
+
+        handleKeys(e) {
+            // Toggle scanner with Ctrl+B
+            if (e.ctrlKey && (e.key === 'b' || e.key === 'B')) {
+                e.preventDefault();
+                this.scannerActive ? this.stopScanner() : this.startScanner();
+            }
+            // Close scanner with Escape
+            if (e.key === 'Escape' && this.scannerActive) {
+                e.preventDefault();
+                this.stopScanner();
+            }
+            // Quick quantity adjust while selecting current product
+            if (this.currentProduct) {
+                if (e.key === '+') { this.quantity = parseInt(this.quantity || 1) + 1; }
+                if (e.key === '-' && this.quantity > 1) { this.quantity = parseInt(this.quantity) - 1; }
+            }
+        },
+
+        // Utility debounce for network calls
+        _debounceTimer: null,
+        debounce(fn, delay = 200) {
+            return (...args) => {
+                clearTimeout(this._debounceTimer);
+                this._debounceTimer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        },
 
         async addItem() {
             if (!this.barcode) return;
-            
+
             try {
                 const response = await fetch(`/point_of_sale/api/products/${this.barcode}/`);
                 const product = await response.json();
                 this.currentProduct = product;
                 this.quantity = 1;  // Reset quantity
             } catch (error) {
-                alert('Product not found!');
+                this.showError('Product not found!');
                 this.barcode = '';
             }
         },
 
         addToCart() {
             if (!this.currentProduct || this.quantity < 1) return;
-            
-            const existingItem = this.cart.find(item => 
+
+            const existingItem = this.cart.find(item =>
                 item.product.id === this.currentProduct.id
             );
 
@@ -136,30 +195,36 @@ function quickCheckout() {
             this.barcode = '';
             this.currentProduct = null;
             this.updateTotal();
+            this.persistCart();
         },
 
         removeItem(index) {
             this.cart.splice(index, 1);
             this.updateTotal();
+            this.persistCart();
         },
 
         updateTotal() {
-            this.total = this.cart.reduce((sum, item) => 
+            this.total = this.cart.reduce((sum, item) =>
                 sum + (item.product.price * item.quantity), 0
             );
+            // Keep hidden input in sync if any other code reads it
+            this.persistCart();
         },
 
         checkout() {
             if (this.cart.length === 0) {
-                alert('Please add items to cart!');
+                this.showError('Please add items to cart!');
                 return;
             }
+            this.isSubmitting = true;
             this.$el.submit();
         },
 
         startScanner() {
             const scannerDiv = document.getElementById('barcode-scanner');
             scannerDiv.classList.remove('d-none');
+            this.scannerActive = true;
 
             Quagga.init({
                 inputStream: {
@@ -178,7 +243,8 @@ function quickCheckout() {
             }, function(err) {
                 if (err) {
                     console.error(err);
-                    alert('Failed to initialize scanner. Please try again.');
+                    // Surface a friendly error and bail
+                    document.dispatchEvent(new CustomEvent('qc:error', { detail: 'Scanner failed to initialize' }));
                     return;
                 }
                 Quagga.start();
@@ -195,6 +261,7 @@ function quickCheckout() {
             Quagga.stop();
             const scannerDiv = document.getElementById('barcode-scanner');
             scannerDiv.classList.add('d-none');
+            this.scannerActive = false;
         }
     }
 }

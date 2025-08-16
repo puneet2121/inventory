@@ -4,7 +4,7 @@ from app.core.models import TenantAwareModel, TenantManager
 from app.core.storage_backends import StaticStorage, MediaStorage
 from django.db.models import JSONField
 from django.contrib.auth.models import User
-
+from django.utils.translation import gettext_lazy as _
 
 class OrderStatusChoices(models.TextChoices):
     PENDING = 'PENDING', 'Pending'
@@ -110,3 +110,30 @@ class InventoryImage(TenantAwareModel):
 
     class Meta:
         db_table = 'inventory_image'
+
+
+class StockMovementType(models.TextChoices):
+    PURCHASE_RECEIVE = 'PURCHASE_RECEIVE', _('Purchase Receive')
+    SALE = 'SALE', _('Sale')
+    RETURN_IN = 'RETURN_IN', _('Return In')
+    RETURN_OUT = 'RETURN_OUT', _('Return Out')
+    ADJUSTMENT = 'ADJUSTMENT', _('Adjustment')
+
+
+class StockMovement(TenantAwareModel):
+    """Immutable log of all stock changes for auditability and reporting."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_movements')
+    location = models.CharField(max_length=100)
+    change_type = models.CharField(max_length=30, choices=StockMovementType.choices)
+    quantity_change = models.IntegerField(help_text="Positive for inbound, negative for outbound")
+    related_purchase_order = models.ForeignKey('purchase.PurchaseOrder', null=True, blank=True, on_delete=models.SET_NULL, related_name='stock_movements')
+    related_sales_order = models.ForeignKey('point_of_sale.SalesOrder', null=True, blank=True, on_delete=models.SET_NULL, related_name='stock_movements')
+    note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stock_movement'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.change_type} {self.quantity_change} of {self.product.name} at {self.location}"

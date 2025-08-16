@@ -1,0 +1,45 @@
+{% extends 'core/page/full_page.html' %}
+{% block title %}Purchase Orders{% endblock %}
+{% block page_content %}
+<div class="d-flex justify-content-between align-items-center my-3">
+  <h3 class="mb-0"><i class="bi bi-bag-check me-2"></i>Purchase Orders</h3>
+  <a class="btn btn-primary" href="{% url 'purchase:purchase_order_create' %}"><i class="bi bi-plus-circle me-1"></i> New Purchase Order</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>#</th><th>Vendor</th><th>Date</th><th>Status</th><th>Location</th><th class="text-end">Total</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for po in pos %}
+          <tr>
+            <td>{{ po.id }}</td>
+            <td>{{ po.vendor }}</td>
+            <td>{{ po.order_date }}</td>
+            <td>
+              {% if po.status == 'DRAFT' %}
+                <span class="badge bg-secondary">Draft</span>
+              {% else %}
+                <span class="badge bg-success">Received</span>
+              {% endif %}
+            </td>
+            <td>{{ po.location }}</td>
+            <td class="text-end">{{ po.total_amount }}</td>
+            <td>
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'purchase:purchase_order_edit' po.id %}"><i class="bi bi-pencil-square"></i> Edit</a>
+              {% if po.status == 'DRAFT' %}
+                <a class="btn btn-sm btn-success" href="{% url 'purchase:purchase_order_receive' po.id %}"><i class="bi bi-box-seam"></i> Receive</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center p-4 text-muted">No Purchase Orders found.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

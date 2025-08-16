@@ -3,7 +3,7 @@ from django.db import models, transaction
 
 from app.core.models import TenantAwareModel
 from app.employee.models import EmployeeProfile
-from app.inventory.models import Inventory, Product
+from app.inventory.models import Inventory, Product, StockMovement, StockMovementType
 from app.customers.models import Customer
 from django.contrib.auth.models import User
 from app.core.tenant_middleware import get_current_tenant
@@ -54,6 +54,16 @@ class SalesOrder(TenantAwareModel):
                 inventory = Inventory.objects.get(product=item.product, location=self.location)
                 inventory.quantity -= item.quantity
                 inventory.save()
+                # Log stock movement for sale (outbound)
+                StockMovement.objects.create(
+                    product=item.product,
+                    location=self.location,
+                    change_type=StockMovementType.SALE,
+                    quantity_change=-(item.quantity),
+                    related_sales_order=self,
+                    tenant_id=self.tenant_id,
+                    note=f"SO {self.order_number or self.id} finalized"
+                )
 
             # Finalize order
             self.cached_total = self.total_price

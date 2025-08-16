@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 
 class SignupForm(forms.Form):
     company_name = forms.CharField(max_length=255, label="Company Name")
+    first_name = forms.CharField(max_length=150, label="first name")
+    last_name = forms.CharField(max_length=150, label="last name")
     username = forms.CharField(max_length=150, label="Username")
     password1 = forms.CharField(widget=forms.PasswordInput, label="Password")
     password2 = forms.CharField(widget=forms.PasswordInput, label="Confirm Password")
