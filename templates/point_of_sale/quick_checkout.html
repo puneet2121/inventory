@@ -1,288 +1,280 @@
 {% extends 'core/page/full_page.html' %}
-
+{% load static %}
+{% block title %}Quick Checkout{% endblock %}
 {% block page_content %}
-<div class="container mt-3" x-data="quickCheckout()">
-    <!-- Lightweight toast/alert -->
-    <div class="alert alert-danger position-fixed top-0 end-0 m-3 shadow" x-show="toast.show" x-text="toast.message" x-transition></div>
-    <h2 class="mb-4">Quick Checkout</h2>
-
-    <!-- Barcode Scanner Section -->
-    <div class="mb-4">
-        <button class="btn btn-primary btn-lg w-100 mb-2" @click="startScanner" :disabled="scannerActive">
-            Open Barcode Scanner (Ctrl+B)
-        </button>
-        <div id="barcode-scanner" class="d-none">
-            <div id="interactive" class="viewport"></div>
-            <button class="btn btn-danger btn-lg w-100 mt-2" @click="stopScanner">
-                Close Scanner (Esc)
-            </button>
-        </div>
-    </div>
-
-    <!-- Barcode Input (Manual Entry) -->
-    <div class="mb-4">
-        <input type="text"
-               class="form-control form-control-lg"
-               placeholder="Scan Barcode or Enter Manually"
-               x-model="barcode"
-               @keyup.enter="addItem"
-               autofocus>
-    </div>
-
-    <!-- Quantity Input -->
-    <div class="row mb-4" x-show="currentProduct">
-        <div class="col-12">
-            <input type="number"
-                   class="form-control form-control-lg"
-                   placeholder="Enter Quantity"
-                   x-model="quantity"
-                   min="1"
-                   value="1"
-                   @keyup.enter="addToCart">
-            <button class="btn btn-success btn-lg w-100 mt-2" @click="addToCart">
-                Add to Cart
-            </button>
-        </div>
-    </div>
-
-    <!-- Cart Items -->
+<h3 class="my-3"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Quick Checkout</h3>
+<div class="row g-3">
+  <div class="col-lg-7">
     <div class="card mb-3">
-        <div class="card-body">
-            <template x-for="(item, index) in cart" :key="index">
-                <div class="row align-items-center mb-2">
-                    <div class="col-5">
-                        <span x-text="item.product.name"></span>
-                    </div>
-                    <div class="col-3">
-                        <input type="number"
-                               class="form-control"
-                               x-model="item.quantity"
-                               min="1"
-                               @change="updateTotal">
-                    </div>
-                    <div class="col-3">
-                        ₹<span x-text="(item.product.price * item.quantity).toFixed(2)"></span>
-                    </div>
-                    <div class="col-1">
-                        <button class="btn btn-danger btn-sm"
-                                @click="removeItem(index)">
-                            X
-                        </button>
-                    </div>
-                </div>
-            </template>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+          <div class="input-group flex-grow-1" style="min-width:260px;">
+            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+            <input id="scanOrSearch" class="form-control" placeholder="Scan barcode or type to search..." autocomplete="off" />
+          </div>
+          <button id="openScannerBtn" class="btn btn-outline-primary">
+            <i class="bi bi-camera-video me-1"></i> Scan Barcode
+          </button>
+          <button id="closeScannerBtn" class="btn btn-outline-secondary d-none">
+            <i class="bi bi-x-circle me-1"></i> Close Scanner
+          </button>
         </div>
+        <div id="searchResults" class="list-group mt-2 d-none"></div>
+        <!-- Live Scanner -->
+        <div id="scannerWrap" class="mt-2 d-none">
+          <div id="scannerViewport" style="position:relative; width:100%; max-width:640px; aspect-ratio:4/3; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;"></div>
+          <small class="text-muted">Tip: Hold barcode 15-25cm from camera. Press Esc or "Close Scanner" to stop.</small>
+        </div>
+      </div>
     </div>
 
-    <!-- Checkout Section -->
-    <div class="fixed-bottom bg-white p-3 border-top">
-        <div class="d-flex justify-content-between align-items-center">
-            <h3>Total: ₹<span x-text="total.toFixed(2)"></span></h3>
-            <form method="post" @submit.prevent="checkout">
-                {% csrf_token %}
-                <input type="hidden" name="cart_data" :value="JSON.stringify(cart)">
-                <select name="payment_status" class="form-select me-2" required>
-                    <option value="paid">Paid Now</option>
-                    <option value="unpaid">Pay Later</option>
-                </select>
-                <button type="submit" class="btn btn-success btn-lg" :disabled="isSubmitting || cart.length===0">
-                    <span x-show="!isSubmitting">Complete Checkout (Enter)</span>
-                    <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <span x-show="isSubmitting">Processing...</span>
-                </button>
-            </form>
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Cart</strong>
+        <small class="text-muted">Click qty to edit</small>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="cartTable">
+            <thead class="table-light">
+              <tr>
+                <th>Product</th>
+                <th class="text-end" style="width:120px;">Qty</th>
+                <th class="text-end" style="width:140px;">Price</th>
+                <th class="text-end" style="width:140px;">Total</th>
+                <th style="width:50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="cartBody">
+              <tr id="emptyRow"><td colspan="5" class="text-center text-muted p-4">No items yet. Scan or search to add.</td></tr>
+            </tbody>
+          </table>
         </div>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <div>
+          <span class="me-3"><strong>Items:</strong> <span id="itemsCount">0</span></span>
+          <span><strong>Subtotal:</strong> ₹<span id="subtotal">0.00</span></span>
+        </div>
+        <div class="fs-5"><strong>Total:</strong> ₹<span id="grandTotal">0.00</span></div>
+      </div>
     </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><strong>Payment</strong></div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Method</label>
+          <div class="d-flex gap-3">
+            <div class="form-check"><input class="form-check-input" type="radio" name="payment" id="payCash" value="cash" checked><label class="form-check-label" for="payCash">Cash</label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="payment" id="payCard" value="card"><label class="form-check-label" for="payCard">Card</label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="payment" id="payUpi" value="upi"><label class="form-check-label" for="payUpi">UPI</label></div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Location</label>
+          <input id="location" class="form-control" value="Main Store" />
+        </div>
+        <button id="checkoutBtn" class="btn btn-success w-100">
+          <i class="bi bi-check2-circle me-1"></i> Process Payment
+        </button>
+        <div id="checkoutMsg" class="mt-3 small"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Include QuaggaJS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-
+<!-- QuaggaJS for barcode scanning -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" integrity="sha512-NexF0nM0k8L5p3T1eN0+0noY4l3H98vJgkO2pZL8nQf2Gk0Gv8cq5c5C0Qj8Z0L7kqTn3q8w0k5Q2H3PCqgYJw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
-function quickCheckout() {
-    return {
-        barcode: '',
-        quantity: 1,
-        currentProduct: null,
-        cart: [],
-        total: 0,
-        isSubmitting: false,
-        scannerActive: false,
-        toast: { show: false, message: '' },
+  // Embed pre-serialized JSON directly; do NOT JSON.parse an object
+  const PRODUCTS = {{ products|default:'[]'|safe }};
+  // Safety: ensure array
+  const PRODUCT_LIST = Array.isArray(PRODUCTS) ? PRODUCTS : [];
+  const cart = new Map(); // key: product_id, value: {id,name,price,qty}
 
-        init() {
-            this.loadCart();
-            // Global keyboard shortcuts
-            window.addEventListener('keydown', (e) => this.handleKeys(e));
-        },
-
-        showError(msg) {
-            this.toast.message = msg;
-            this.toast.show = true;
-            setTimeout(() => { this.toast.show = false; }, 2500);
-        },
-
-        persistCart() {
-            try { localStorage.setItem('qc_cart', JSON.stringify(this.cart)); } catch (e) {}
-        },
-        loadCart() {
-            try {
-                const raw = localStorage.getItem('qc_cart');
-                if (raw) {
-                    this.cart = JSON.parse(raw);
-                    this.updateTotal();
-                }
-            } catch (e) {}
-        },
-
-        handleKeys(e) {
-            // Toggle scanner with Ctrl+B
-            if (e.ctrlKey && (e.key === 'b' || e.key === 'B')) {
-                e.preventDefault();
-                this.scannerActive ? this.stopScanner() : this.startScanner();
-            }
-            // Close scanner with Escape
-            if (e.key === 'Escape' && this.scannerActive) {
-                e.preventDefault();
-                this.stopScanner();
-            }
-            // Quick quantity adjust while selecting current product
-            if (this.currentProduct) {
-                if (e.key === '+') { this.quantity = parseInt(this.quantity || 1) + 1; }
-                if (e.key === '-' && this.quantity > 1) { this.quantity = parseInt(this.quantity) - 1; }
-            }
-        },
-
-        // Utility debounce for network calls
-        _debounceTimer: null,
-        debounce(fn, delay = 200) {
-            return (...args) => {
-                clearTimeout(this._debounceTimer);
-                this._debounceTimer = setTimeout(() => fn.apply(this, args), delay);
-            };
-        },
-
-        async addItem() {
-            if (!this.barcode) return;
-
-            try {
-                const response = await fetch(`/point_of_sale/api/products/${this.barcode}/`);
-                const product = await response.json();
-                this.currentProduct = product;
-                this.quantity = 1;  // Reset quantity
-            } catch (error) {
-                this.showError('Product not found!');
-                this.barcode = '';
-            }
-        },
-
-        addToCart() {
-            if (!this.currentProduct || this.quantity < 1) return;
-
-            const existingItem = this.cart.find(item =>
-                item.product.id === this.currentProduct.id
-            );
-
-            if (existingItem) {
-                existingItem.quantity += parseInt(this.quantity);
-            } else {
-                this.cart.push({
-                    product: this.currentProduct,
-                    quantity: parseInt(this.quantity)
-                });
-            }
-
-            this.barcode = '';
-            this.currentProduct = null;
-            this.updateTotal();
-            this.persistCart();
-        },
-
-        removeItem(index) {
-            this.cart.splice(index, 1);
-            this.updateTotal();
-            this.persistCart();
-        },
-
-        updateTotal() {
-            this.total = this.cart.reduce((sum, item) =>
-                sum + (item.product.price * item.quantity), 0
-            );
-            // Keep hidden input in sync if any other code reads it
-            this.persistCart();
-        },
-
-        checkout() {
-            if (this.cart.length === 0) {
-                this.showError('Please add items to cart!');
-                return;
-            }
-            this.isSubmitting = true;
-            this.$el.submit();
-        },
-
-        startScanner() {
-            const scannerDiv = document.getElementById('barcode-scanner');
-            scannerDiv.classList.remove('d-none');
-            this.scannerActive = true;
-
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#interactive'),
-                    constraints: {
-                        width: 640,
-                        height: 480,
-                        facingMode: "environment" // Use rear camera
-                    },
-                },
-                decoder: {
-                    readers: ["ean_reader", "upc_reader"] // Supported barcode formats
-                }
-            }, function(err) {
-                if (err) {
-                    console.error(err);
-                    // Surface a friendly error and bail
-                    document.dispatchEvent(new CustomEvent('qc:error', { detail: 'Scanner failed to initialize' }));
-                    return;
-                }
-                Quagga.start();
-            });
-
-            Quagga.onDetected((data) => {
-                this.barcode = data.codeResult.code;
-                this.addItem();
-                this.stopScanner();
-            });
-        },
-
-        stopScanner() {
-            Quagga.stop();
-            const scannerDiv = document.getElementById('barcode-scanner');
-            scannerDiv.classList.add('d-none');
-            this.scannerActive = false;
-        }
+  function fmt(n){return (Number(n)||0).toFixed(2)}
+  function renderCart(){
+    const body = document.getElementById('cartBody');
+    body.innerHTML = '';
+    let items=0, subtotal=0;
+    if(cart.size===0){
+      body.innerHTML = '<tr id="emptyRow"><td colspan="5" class="text-center text-muted p-4">No items yet. Scan or search to add.</td></tr>';
+    } else {
+      cart.forEach(item=>{
+        items += item.qty;
+        const lineTotal = item.qty * item.price;
+        subtotal += lineTotal;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td class="text-end">
+            <input type="number" min="1" value="${item.qty}" data-id="${item.id}" class="form-control form-control-sm text-end qty-input" />
+          </td>
+          <td class="text-end">₹ ${fmt(item.price)}</td>
+          <td class="text-end">₹ ${fmt(lineTotal)}</td>
+          <td><button class="btn btn-sm btn-outline-danger" data-del="${item.id}"><i class="bi bi-x-lg"></i></button></td>`;
+        body.appendChild(tr);
+      });
     }
-}
+    document.getElementById('itemsCount').textContent = items;
+    document.getElementById('subtotal').textContent = fmt(subtotal);
+    document.getElementById('grandTotal').textContent = fmt(subtotal);
+  }
+
+  function addToCart(p){
+    const cur = cart.get(p.id) || {id:p.id, name:p.name, price:Number(p.price), qty:0};
+    cur.qty += 1; cart.set(p.id, cur); renderCart();
+  }
+
+  function findByBarcode(code){
+    if(!code) return null;
+    const s = String(code).trim();
+    return PRODUCT_LIST.find(p => String(p.barcode||'').trim() === s) || null;
+  }
+
+  function searchProducts(q){
+    const s = q.trim().toLowerCase();
+    if(!s) return [];
+    return PRODUCT_LIST.filter(p =>
+      (p.barcode && p.barcode.toLowerCase().includes(s)) ||
+      p.name.toLowerCase().includes(s) ||
+      (p.model && p.model.toLowerCase().includes(s))
+    ).slice(0, 10);
+  }
+
+  function showResults(list){
+    const box = document.getElementById('searchResults');
+    if(!list.length){ box.classList.add('d-none'); box.innerHTML=''; return; }
+    box.classList.remove('d-none');
+    box.innerHTML = '';
+    list.forEach(p=>{
+      const a = document.createElement('a');
+      a.href = '#'; a.className = 'list-group-item list-group-item-action';
+      a.textContent = `${p.name} — ₹${fmt(p.price)}${p.barcode? ' ('+p.barcode+')':''}`;
+      a.addEventListener('click', (e)=>{ e.preventDefault(); addToCart(p); box.classList.add('d-none'); document.getElementById('scanOrSearch').value=''; });
+      box.appendChild(a);
+    });
+  }
+
+  document.getElementById('scanOrSearch').addEventListener('input', (e)=>{
+    const q = e.target.value; showResults(searchProducts(q));
+  });
+
+  document.getElementById('cartBody').addEventListener('input', (e)=>{
+    if(e.target.classList.contains('qty-input')){
+      const id = Number(e.target.getAttribute('data-id'));
+      const v = Math.max(1, Number(e.target.value)||1);
+      const it = cart.get(id); if(it){ it.qty = v; renderCart(); }
+    }
+  });
+  document.getElementById('cartBody').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    const delId = btn.getAttribute('data-del');
+    if(delId){ cart.delete(Number(delId)); renderCart(); }
+  });
+
+  function getCookie(name){
+    const v = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith(name+'='));
+    return v? decodeURIComponent(v.split('=')[1]):'';
+  }
+
+  document.getElementById('checkoutBtn').addEventListener('click', async ()=>{
+    if(cart.size===0){
+      document.getElementById('checkoutMsg').innerHTML = '<span class="text-danger">Add items first.</span>';
+      return;
+    }
+    const items = Array.from(cart.values()).map(i=>({product_id:i.id, quantity:i.qty, price:i.price}));
+    const payment_method = document.querySelector('input[name=payment]:checked').value;
+    const location = document.getElementById('location').value || 'Main Store';
+    const payload = { items, payment_method, location };
+    const t0 = performance.now();
+    try{
+      const res = await fetch('{% url "point_of_sale:quick_checkout" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const ms = Math.max(1, Math.round(performance.now()-t0));
+      if(!res.ok){ throw new Error(data.error || 'Checkout failed'); }
+      document.getElementById('checkoutMsg').innerHTML = `<span class=\"text-success\">Paid ✓ Invoice ${data.invoice_number}. Time: ${ms} ms.</span>`;
+      cart.clear(); renderCart();
+    }catch(err){
+      document.getElementById('checkoutMsg').innerHTML = `<span class=\"text-danger\">${err.message}</span>`;
+    }
+  });
+
+  // ===== Barcode Scanner (QuaggaJS) =====
+  const scannerWrap = document.getElementById('scannerWrap');
+  const openScannerBtn = document.getElementById('openScannerBtn');
+  const closeScannerBtn = document.getElementById('closeScannerBtn');
+  let scanning = false;
+  let lastScanTs = 0;
+
+  function startScanner(){
+    if(scanning) return;
+    if(!window.Quagga){
+      alert('Scanner library failed to load.');
+      return;
+    }
+    scannerWrap.classList.remove('d-none');
+    openScannerBtn.classList.add('d-none');
+    closeScannerBtn.classList.remove('d-none');
+    scanning = true;
+
+    Quagga.init({
+      inputStream: {
+        type: 'LiveStream',
+        target: document.querySelector('#scannerViewport'),
+        constraints: { facingMode: 'environment' }
+      },
+      decoder: {
+        readers: [
+          'code_128_reader',
+          'ean_reader',
+          'ean_8_reader',
+          'upc_reader',
+          'upc_e_reader'
+        ]
+      },
+      locate: true,
+      numOfWorkers: navigator.hardwareConcurrency || 2
+    }, function(err){
+      if(err){ console.error(err); stopScanner(); return; }
+      Quagga.start();
+    });
+
+    Quagga.offDetected();
+    Quagga.onDetected(function(result){
+      const now = Date.now();
+      if(now - lastScanTs < 800) return; // debounce rapid repeats
+      lastScanTs = now;
+      const code = result && result.codeResult && result.codeResult.code;
+      if(!code) return;
+      const p = findByBarcode(code);
+      if(p){ addToCart(p); }
+    });
+
+    // Close with ESC
+    document.addEventListener('keydown', escCloser);
+  }
+
+  function stopScanner(){
+    if(!scanning) return;
+    try { Quagga.stop(); } catch(e) {}
+    scanning = false;
+    scannerWrap.classList.add('d-none');
+    openScannerBtn.classList.remove('d-none');
+    closeScannerBtn.classList.add('d-none');
+    document.removeEventListener('keydown', escCloser);
+  }
+  function escCloser(e){ if(e.key === 'Escape') stopScanner(); }
+
+  openScannerBtn.addEventListener('click', startScanner);
+  closeScannerBtn.addEventListener('click', stopScanner);
 </script>
-
-<style>
-#interactive {
-    width: 100%;
-    height: 300px;
-    position: relative;
-    overflow: hidden;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-}
-
-.viewport {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-}
-</style>
 {% endblock %}

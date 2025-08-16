@@ -467,3 +467,105 @@ def add_payment(request, invoice_id):
         'form': form,
     })
 
+
+@login_required(login_url='/authentication/login/')
+@require_http_methods(["GET", "POST"])
+@transaction.atomic
+def quick_checkout(request):
+    """
+    Fast POS endpoint:
+    - POST JSON payload with items and payment_method
+    - Creates SalesOrder -> finalizes (adjust inventory) -> creates Invoice -> records full payment
+    - Returns JSON with invoice_number and totals
+
+    Expected JSON body:
+    {
+      "location": "Main Store",
+      "items": [ {"product_id": 1, "quantity": 2, "price": 199.99}, ... ],
+      "payment_method": "cash|card|upi"
+    }
+    """
+    if request.method == 'GET':
+        # Simple UI to test quick checkout; embed product catalog for selection/scanning
+        products = Product.objects.all().values('id', 'name', 'price', 'barcode', 'model')
+        # Convert Decimal to float for JSON serialization
+        plist = []
+        for p in products:
+            d = dict(p)
+            if isinstance(d.get('price'), Decimal):
+                d['price'] = float(d['price'])
+            plist.append(d)
+        return render(request, 'point_of_sale/quick_checkout.html', { 'products': json.dumps(plist) })
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    items = data.get('items', [])
+    payment_method = data.get('payment_method', 'cash')
+    location = data.get('location', 'Main Store')
+
+    if not items:
+        return JsonResponse({"error": "No items provided"}, status=400)
+
+    # Ensure a Walk-in Customer with static code exists (customer_id = "001" via contact field)
+    walkin_customer = Customer.objects.filter(name='Walk-in Customer', city='Walk-in', contact='001').first()
+    if not walkin_customer:
+        walkin_customer = Customer.objects.create(
+            name='Walk-in Customer',
+            city='Walk-in',
+            customer_type='C',
+            contact='001',  # static code
+            email='',
+            shop=''
+        )
+
+    # Create draft order
+    sales_order = SalesOrder.objects.create(
+        customer=walkin_customer,
+        customer_type='walk_in',
+        employee=EmployeeProfile.objects.filter(user=request.user).first(),
+        location=location,
+        status='draft'
+    )
+
+    # Add items
+    for it in items:
+        try:
+            product = Product.objects.get(pk=it['product_id'])
+            qty = int(it['quantity'])
+            price = Decimal(str(it.get('price', product.price)))
+        except Exception:
+            transaction.set_rollback(True)
+            return JsonResponse({"error": "Invalid item in payload"}, status=400)
+        OrderItem.objects.create(sales_order=sales_order, product=product, quantity=qty, price=price)
+
+    # Finalize order: updates cached_total and deducts inventory + logs StockMovement
+    try:
+        sales_order.finalize_order()
+    except ValidationError as e:
+        transaction.set_rollback(True)
+        return JsonResponse({"error": str(e)}, status=400)
+
+    # Create invoice, mark paid, and record payment
+    invoice = Invoice.objects.create(
+        sales_order=sales_order,
+        total_invoice_amount=sales_order.cached_total,
+        created_by=request.user,
+        payment_status='paid'
+    )
+    Payment.objects.create(
+        invoice=invoice,
+        amount=sales_order.cached_total,
+        payment_method=payment_method,
+        received_by=request.user
+    )
+    invoice.update_cached_paid_amount()
+
+    return JsonResponse({
+        "order_number": sales_order.order_number,
+        "invoice_number": invoice.invoice_number,
+        "total": float(sales_order.cached_total),
+        "status": "paid"
+    })
