@@ -24,10 +24,33 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Page Content -->
-                {% block page_content %}
-                {% endblock %}
+
+                <!-- Desktop Header (Profile) -->
+                <div class="d-none d-lg-block py-2">
+                    <div class="container-fluid">
+                        <div class="d-flex justify-content-end align-items-center">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center" type="button" id="desktopProfileMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle fs-5 me-2"></i>
+                                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="desktopProfileMenu">
+                                    <li class="px-3 py-2 small text-muted">
+                                        <div><strong>{{ request.user.get_full_name|default:request.user.username }}</strong></div>
+                                        <div>{{ request.user.email }}</div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#">Info</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">Logout</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Page Content -->
+                 {% block page_content %}
+                 {% endblock %}
             </div>
         </div>
     </div>

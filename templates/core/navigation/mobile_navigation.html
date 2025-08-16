@@ -26,6 +26,24 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <a class="navbar-brand" href="#">POS System</a>
+        <div class="d-flex align-items-center ms-auto">
+            <!-- Notifications button (placeholder) -->
+            <button class="btn btn-link text-white position-relative me-2" type="button" aria-label="Notifications">
+                <i class="bi bi-bell fs-5"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+            </button>
+            <!-- Profile dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-link text-white dropdown-toggle d-flex align-items-center" type="button" id="mobileProfileMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle fs-5 me-1"></i>
+                    <span class="d-inline-block">{{ request.user.get_short_name|default:request.user.username }}</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mobileProfileMenu">
+                    <li><a class="dropdown-item" href="#">Info</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">Logout</a></li>
+                </ul>
+            </div>
+        </div>
     </div>
 </nav>
