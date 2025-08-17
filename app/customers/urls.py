@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import add_customer, list_customers, customers_with_debt, edit_customer, customer_detail
+from .views import add_customer, list_customers, customers_with_debt, edit_customer, customer_detail, import_customers
 app_name = 'customers'
 
 
@@ -9,5 +9,6 @@ urlpatterns = [
     path('debt/', customers_with_debt, name='customers_with_debt'),
     path('edit/<int:pk>/', edit_customer, name='edit_customer'),
     path('customer/<int:pk>/', customer_detail, name='customer_detail'),
+    path('import/', import_customers, name='import_customers'),
 
 ]
