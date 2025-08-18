@@ -175,7 +175,8 @@ def customer_detail(request, pk):
 def list_customers(request):
     customers = Customer.objects.all()
     total_customers = customers.count()  # Count the total number of customers
-    total_debt = customers.aggregate(total_debt=Sum('total_debt')) or 0
+    agg = customers.aggregate(total_debt=Sum('total_debt'))
+    total_debt = agg.get('total_debt') or Decimal('0.00')
     return render(request, 'customers/page/list_customers.html', {
         'customers': customers,
         'total_customers': total_customers,

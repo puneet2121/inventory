@@ -1,19 +1,17 @@
 import openpyxl
-from django.contrib import messages
 from django.core.files.storage import default_storage
-from django.db.models import F
 from django.forms import inlineformset_factory
-from django.http import JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
 from app.inventory.forms import ProductForm, InventoryImageForm, InventoryForm, CategoryForm
 from app.inventory.models import Inventory, InventoryImage, Category
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from app.core.decorators import role_required
 from django.http import HttpResponse
-import pandas as pd
-import requests
-from django.shortcuts import render
+from decimal import Decimal
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib import messages
+from .models import Product, Inventory
 
 
 @login_required(login_url='/authentication/login/')
@@ -23,12 +21,6 @@ def index(request):
         'message': 'Hello World!'
     }
     return render(request, 'inventory/page/product_index_page.html', context)
-
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib import messages
-from .models import Product, Inventory
 
 
 @login_required(login_url='/authentication/login/')
@@ -101,10 +93,16 @@ def item_list_view(request):
     ]
     products = Product.objects.all()
 
+    # Compute total inventory value = sum(price * stock)
+    total_value = sum(
+        Decimal(str(item['price'])) * Decimal(item['stock'])
+        for item in product_list
+    ) if product_list else Decimal('0.00')
 
     context = {
         'products': product_list,
         'total_items': products.count(),
+        'total_value': total_value,
         'low_stock_count': products.filter(inventory__lte=5).count(),  # Changed to fixed value of 5
     }
 
