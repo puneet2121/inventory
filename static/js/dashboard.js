@@ -394,7 +394,8 @@ document.addEventListener('alpine:init', () => {
                 const chartContainer = document.getElementById('salesTrendChart').parentElement;
                 chartContainer.classList.add('loading');
                 
-                const response = await fetch(`/api/sales/trend/${this.currentPeriod}/`);
+                const response = await fetch(`/
+                api/sales/trend/${this.currentPeriod}/`);
                 const data = await response.json();
 
                 this.salesChart.data.labels = data.labels;

@@ -1,128 +1,128 @@
-{% extends 'core/page/full_page.html' %}
-
-{% block page_content %}
-<div class="container mt-5">
-    <h2 class="text-center ">Dashboard</h2>
-
-    <!-- Analytics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-white bg-primary shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">Total Sales Today</h5>
-                    <p class="card-text">₹{{ total_sales_today }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-success shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">Total Sales This Week</h5>
-                    <p class="card-text">₹{{ total_sales_week }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-danger shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">Low Inventory Alerts</h5>
-                    <p class="card-text">{{ low_inventory_products.count }} items</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Sales Chart -->
-    <div class="row mb-5">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">Weekly Sales</h5>
-                    <canvas id="salesChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Low Inventory Table -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">Low Inventory Products</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Product ID</th>
-                                    <th>Name</th>
-                                    <th>Stock</th>
-                                    <th>Reorder Level</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for product in low_inventory_products %}
-                                <tr>
-                                    <td>{{ product.id }}</td>
-                                    <td>{{ product.name }}</td>
-                                    <td>{{ product.stock }}</td>
-                                    <td>{{ product.reorder_level }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center">No low inventory products</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Chart.js Integration -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    const salesChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ chart_labels|safe }},
-            datasets: [{
-                label: 'Total Sales',
-                data: {{ chart_data|safe }},
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderWidth: 2,
-                tension: 0.4,
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Date',
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Sales Amount (₹)',
-                    },
-                    beginAtZero: true,
-                }
-            }
-        }
-    });
-</script>
-{% endblock %}
+{#{% extends 'core/page/full_page.html' %}#}
+{##}
+{#{% block page_content %}#}
+{#<div class="container mt-5">#}
+{#    <h2 class="text-center ">Dashboard</h2>#}
+{##}
+{#    <!-- Analytics Cards -->#}
+{#    <div class="row mb-4">#}
+{#        <div class="col-md-4">#}
+{#            <div class="card text-white bg-primary shadow-sm">#}
+{#                <div class="card-body">#}
+{#                    <h5 class="card-title">Total Sales Today</h5>#}
+{#                    <p class="card-text">₹{{ total_sales_today }}</p>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="col-md-4">#}
+{#            <div class="card text-white bg-success shadow-sm">#}
+{#                <div class="card-body">#}
+{#                    <h5 class="card-title">Total Sales This Week</h5>#}
+{#                    <p class="card-text">₹{{ total_sales_week }}</p>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="col-md-4">#}
+{#            <div class="card text-white bg-danger shadow-sm">#}
+{#                <div class="card-body">#}
+{#                    <h5 class="card-title">Low Inventory Alerts</h5>#}
+{#                    <p class="card-text">{{ low_inventory_products.count }} items</p>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Sales Chart -->#}
+{#    <div class="row mb-5">#}
+{#        <div class="col-12">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-body">#}
+{#                    <h5 class="card-title">Weekly Sales</h5>#}
+{#                    <canvas id="salesChart"></canvas>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <!-- Low Inventory Table -->#}
+{#    <div class="row">#}
+{#        <div class="col-12">#}
+{#            <div class="card shadow-sm">#}
+{#                <div class="card-body">#}
+{#                    <h5 class="card-title">Low Inventory Products</h5>#}
+{#                    <div class="table-responsive">#}
+{#                        <table class="table table-hover table-bordered">#}
+{#                            <thead>#}
+{#                                <tr>#}
+{#                                    <th>Product ID</th>#}
+{#                                    <th>Name</th>#}
+{#                                    <th>Stock</th>#}
+{#                                    <th>Reorder Level</th>#}
+{#                                </tr>#}
+{#                            </thead>#}
+{#                            <tbody>#}
+{#                                {% for product in low_inventory_products %}#}
+{#                                <tr>#}
+{#                                    <td>{{ product.id }}</td>#}
+{#                                    <td>{{ product.name }}</td>#}
+{#                                    <td>{{ product.stock }}</td>#}
+{#                                    <td>{{ product.reorder_level }}</td>#}
+{#                                </tr>#}
+{#                                {% empty %}#}
+{#                                <tr>#}
+{#                                    <td colspan="4" class="text-center">No low inventory products</td>#}
+{#                                </tr>#}
+{#                                {% endfor %}#}
+{#                            </tbody>#}
+{#                        </table>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<!-- Chart.js Integration -->#}
+{#<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>#}
+{#<script>#}
+{#    const ctx = document.getElementById('salesChart').getContext('2d');#}
+{#    const salesChart = new Chart(ctx, {#}
+{#        type: 'line',#}
+{#        data: {#}
+{#            labels: {{ chart_labels|safe }},#}
+{#            datasets: [{#}
+{#                label: 'Total Sales',#}
+{#                data: {{ chart_data|safe }},#}
+{#                borderColor: 'rgba(75, 192, 192, 1)',#}
+{#                backgroundColor: 'rgba(75, 192, 192, 0.2)',#}
+{#                borderWidth: 2,#}
+{#                tension: 0.4,#}
+{#            }]#}
+{#        },#}
+{#        options: {#}
+{#            responsive: true,#}
+{#            plugins: {#}
+{#                legend: {#}
+{#                    display: true,#}
+{#                    position: 'top',#}
+{#                }#}
+{#            },#}
+{#            scales: {#}
+{#                x: {#}
+{#                    title: {#}
+{#                        display: true,#}
+{#                        text: 'Date',#}
+{#                    }#}
+{#                },#}
+{#                y: {#}
+{#                    title: {#}
+{#                        display: true,#}
+{#                        text: 'Sales Amount (₹)',#}
+{#                    },#}
+{#                    beginAtZero: true,#}
+{#                }#}
+{#            }#}
+{#        }#}
+{#    });#}
+{#</script>#}
+{#{% endblock %}#}

@@ -18,18 +18,18 @@ class DecimalEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def convert_decimal_to_float(obj):
-    """Convert Decimal objects to float for JSON serialization"""
-    if isinstance(obj, Decimal):
-        return float(obj)
-    elif isinstance(obj, dict):
-        return {key: convert_decimal_to_float(value) for key, value in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_decimal_to_float(item) for item in obj]
-    elif isinstance(obj, tuple):
-        return tuple(convert_decimal_to_float(item) for item in obj)
-    else:
-        return obj
+# def convert_decimal_to_float(obj):
+#     """Convert Decimal objects to float for JSON serialization"""
+#     if isinstance(obj, Decimal):
+#         return float(obj)
+#     elif isinstance(obj, dict):
+#         return {key: convert_decimal_to_float(value) for key, value in obj.items()}
+#     elif isinstance(obj, list):
+#         return [convert_decimal_to_float(item) for item in obj]
+#     elif isinstance(obj, tuple):
+#         return tuple(convert_decimal_to_float(item) for item in obj)
+#     else:
+#         return obj
 
 
 @login_required(login_url='/authentication/login/')
@@ -202,7 +202,7 @@ def dashboard_view(request):
         for i in range(6, -1, -1):
             date = today - timedelta(days=i)
             sales_trend_labels.insert(0, date.strftime('%b %d'))
-    
+
     # Top Selling Products (last 30 days)
     thirty_days_ago = today - timedelta(days=30)
     recent_orders_30_days = SalesOrder.objects.filter(
@@ -285,13 +285,13 @@ def dashboard_view(request):
         # Recent Data
         'recent_orders': recent_orders,
         
-        # Chart Data - JSON serialized for JavaScript
-        'sales_trend_data_json': json.dumps(sales_trend_data, cls=DecimalEncoder),
-        'sales_trend_labels_json': json.dumps(sales_trend_labels),
-        'top_products_json': json.dumps(top_products, cls=DecimalEncoder),
-        'category_sales_json': json.dumps(category_sales, cls=DecimalEncoder),
-        'monthly_sales_data_json': json.dumps(monthly_sales_data, cls=DecimalEncoder),
-        'monthly_labels_json': json.dumps(monthly_labels),
+        # # Chart Data - JSON serialized for JavaScript
+        # 'sales_trend_data_json': json.dumps(sales_trend_data, cls=DecimalEncoder),
+        # 'sales_trend_labels_json': json.dumps(sales_trend_labels),
+        # 'top_products_json': json.dumps(top_products, cls=DecimalEncoder),
+        # 'category_sales_json': json.dumps(category_sales, cls=DecimalEncoder),
+        # 'monthly_sales_data_json': json.dumps(monthly_sales_data, cls=DecimalEncoder),
+        # 'monthly_labels_json': json.dumps(monthly_labels),
         
         # Additional Stats
         'total_customers': SalesOrder.objects.filter(status='completed').values('customer').distinct().count(),

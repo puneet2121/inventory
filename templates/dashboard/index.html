@@ -265,20 +265,3 @@
     </div>
 </div>
 {% endblock %}
-
-{% block extra_js %}
-<!-- Include Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Pass Django template data to JavaScript
-window.dashboardData = {
-    salesTrendData: JSON.parse('{{ sales_trend_data_json|escapejs }}'),
-    salesTrendLabels: JSON.parse('{{ sales_trend_labels_json|escapejs }}'),
-    topProducts: JSON.parse('{{ top_products_json|escapejs }}'),
-    categorySales: JSON.parse('{{ category_sales_json|escapejs }}'),
-    monthlySalesData: JSON.parse('{{ monthly_sales_data_json|escapejs }}'),
-    monthlyLabels: JSON.parse('{{ monthly_labels_json|escapejs }}')
-};
-</script>
-<script src="{% static 'js/dashboard.js' %}"></script>
-{% endblock %}

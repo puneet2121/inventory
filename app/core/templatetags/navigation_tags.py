@@ -25,7 +25,6 @@ def render_navigation(context):
             'submenus': [
                 {'name': 'Customers', 'url': reverse('customers:list_customers'), 'permission': 'customers.view_customer'},
                 {'name': 'Sales Order', 'url': reverse('point_of_sale:sales_order_list'), 'permission': 'point_of_sale.view_salesorder'},
-                {'name': 'Packages', 'url': '/packages/', 'permission': 'point_of_sale.view_package'},
                 {'name': 'Invoices', 'url': reverse('point_of_sale:invoice_list'), 'permission': 'point_of_sale.view_invoice'},
             ],
             'permission': 'sales.view_salesorder',
