@@ -6,6 +6,7 @@ from django.db.models import JSONField
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 
+
 class OrderStatusChoices(models.TextChoices):
     PENDING = 'PENDING', 'Pending'
     SHIPPING = 'SHIPPING', 'Shipping'
