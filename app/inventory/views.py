@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from .models import Product, Inventory
-
+from django.db import connection, reset_queries
 
 @login_required(login_url='/authentication/login/')
 @role_required(allowed_roles=['admin', 'manager'])
@@ -91,7 +91,6 @@ def item_list_view(request):
         }
         for product in products
     ]
-    products = Product.objects.all()
 
     # Compute total inventory value = sum(price * stock)
     total_value = sum(
@@ -105,8 +104,12 @@ def item_list_view(request):
         'total_value': total_value,
         'low_stock_count': products.filter(inventory__lte=5).count(),  # Changed to fixed value of 5
     }
-
-    return render(request, 'inventory/page/item_list_page.html', context)
+    response = render(request, 'inventory/page/item_list_page.html', context)
+    print(len(connection.queries), "queries executed")
+    for q in connection.queries:
+        print(q["sql"], q["time"])
+    return response
+    # return render(request, 'inventory/page/item_list_page.html', context)
 
 
 @login_required(login_url='/authentication/login/')

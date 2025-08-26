@@ -15,8 +15,6 @@ import boto3
 from storages.backends.s3boto3 import S3Boto3Storage
 from app.core.storage_backends import MediaStorage
 
-
-
 SITE_ID = 1
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

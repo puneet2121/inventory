@@ -15,6 +15,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 import io
 import pandas as pd
+from django.db import connection, reset_queries
 
 def add_customer(request):
     if request.method == 'POST':
@@ -24,6 +25,10 @@ def add_customer(request):
             return redirect('customers:list_customers')
     else:
         form = CustomerForm()
+
+    print(len(connection.queries), "queries executed")
+    for q in connection.queries:
+        print(q["sql"], q["time"])
     return render(request, 'customers/page/add_customer.html', {'form': form})
 
 @require_http_methods(["GET", "POST"])
@@ -177,11 +182,20 @@ def list_customers(request):
     total_customers = customers.count()  # Count the total number of customers
     agg = customers.aggregate(total_debt=Sum('total_debt'))
     total_debt = agg.get('total_debt') or Decimal('0.00')
-    return render(request, 'customers/page/list_customers.html', {
+
+    context = {
         'customers': customers,
         'total_customers': total_customers,
         'total_debt': total_debt,
-    })
+    }
+
+    response = render(request, 'customers/page/list_customers.html', context)
+    print(len(connection.queries), "queries executed")
+    for q in connection.queries:
+        print(q["sql"], q["time"])
+    return response
+
+    # return render(request, 'customers/page/list_customers.html',c )
 
 
 def customers_with_debt(request):
