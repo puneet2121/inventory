@@ -236,3 +236,14 @@ def update_customer_snapshot_on_payment(sender, instance, **kwargs):
     snapshot.total_debt = total_sales - total_paid + total_refunded
     snapshot.credit_balance = credit_balance
     snapshot.save()
+
+
+def add_customer2(request):
+    if request.method == "POST":
+        form = CustomerForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('customer_list')  # change to your success page
+    else:
+        form = CustomerForm()
+    return render(request, 'customers/page/customer_add.html', {'form': form})
