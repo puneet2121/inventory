@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from .models import Product, Inventory
-
+from django.db import connection, reset_queries
 
 @login_required(login_url='/authentication/login/')
 @role_required(allowed_roles=['admin', 'manager'])
@@ -66,45 +66,50 @@ def create_or_edit_product_info(request, product_id=None):
     return render(request, 'inventory/page/product_upload_page.html', context)
 
 @login_required(login_url='/authentication/login/')
-@permission_required('inventory.view_product', login_url='/authentication/login/',raise_exception=True)
 def item_list_view(request):
-    # Optimized: Single query with annotation and aggregation
-    from django.db.models import Sum, F, Value, DecimalField
-    from django.db.models.functions import Coalesce
-    
-    # Get products with inventory data in one optimized query
-    products_with_stock = Product.objects.select_related('category').annotate(
-        total_stock=Coalesce(
-            Sum('inventory__quantity'), 
-            Value(0), 
-            output_field=DecimalField()
-        )
-    ).values(
-        'id', 'name', 'category__name', 'cost', 'price', 'total_stock'
-    )
-    
-    # Convert to list for template
-    product_list = list(products_with_stock)
-    
-    # Compute total inventory value using the annotated data
+    products = Product.objects.all()  # Fetch all products
+    inventory_data = Inventory.objects.all()  # Fetch inventory data
+
+    # Create a mapping of product to stock
+    product_inventory = {}
+    for inventory in inventory_data:
+        product_id = inventory.product.id
+        if product_id in product_inventory:
+            product_inventory[product_id] += inventory.quantity
+        else:
+            product_inventory[product_id] = inventory.quantity
+
+    # Add stock data to products
+    product_list = [
+        {
+            'id': product.id,
+            'name': product.name,
+            'category': product.category,
+            'cost': product.cost,
+            'price': product.price,
+            'stock': product_inventory.get(product.id, 0)
+        }
+        for product in products
+    ]
+
+    # Compute total inventory value = sum(price * stock)
     total_value = sum(
-        Decimal(str(item['price'])) * Decimal(str(item['total_stock']))
+        Decimal(str(item['price'])) * Decimal(item['stock'])
         for item in product_list
     ) if product_list else Decimal('0.00')
-    
-    # Get low stock count efficiently
-    low_stock_count = sum(1 for item in product_list if item['total_stock'] <= 5)
-    
+
     context = {
         'products': product_list,
-        'total_items': len(product_list),
+        'total_items': products.count(),
         'total_value': total_value,
-        'low_stock_count': low_stock_count,
+        'low_stock_count': products.filter(inventory__lte=5).count(),  # Changed to fixed value of 5
     }
-    
     response = render(request, 'inventory/page/item_list_page.html', context)
-    
+    print(len(connection.queries), "queries executed")
+    for q in connection.queries:
+        print(q["sql"], q["time"])
     return response
+    # return render(request, 'inventory/page/item_list_page.html', context)
 
 
 @login_required(login_url='/authentication/login/')
@@ -157,11 +162,10 @@ def export_inventory(request):
     ]
     ws.append(headers)
 
-    # Query inventory and product data - optimized for large datasets
-    inventory_items = Inventory.objects.select_related('product').iterator(chunk_size=1000)
+    # Query inventory and product data
+    inventory_items = Inventory.objects.select_related('product').all()
 
-    # Populate rows using iterator to prevent memory issues
-    row_count = 0
+    # Populate rows
     for item in inventory_items:
         ws.append([
             item.product.name,
@@ -173,12 +177,8 @@ def export_inventory(request):
             item.product.description,
             item.location,
             item.quantity,
+
         ])
-        row_count += 1
-        
-        # Add progress indicator for large exports
-        if row_count % 1000 == 0:
-            print(f"Exported {row_count} rows...")
 
     # Create response with content type for Excel
     response = HttpResponse(

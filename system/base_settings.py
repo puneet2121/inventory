@@ -69,7 +69,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'app.core.tenant_middleware.TenantMiddleware',
-    'app.core.performance_middleware.PerformanceMonitoringMiddleware',  # Performance monitoring
 ]
 TEMPLATES = [
     {
@@ -157,52 +156,3 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 #
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
-
-# Database Performance Optimizations
-if DEBUG:
-    # Enable query logging in development
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-            },
-        },
-        'loggers': {
-            'django.db.backends': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-            },
-        },
-    }
-
-# Database connection optimization
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        'OPTIONS': {
-            'timeout': 20,  # Connection timeout
-        },
-        'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
-    }
-}
-
-# Database query optimization
-DB_OPTIMIZATIONS = {
-    'ATOMIC_REQUESTS': False,  # Disable automatic transactions for better performance
-    'AUTOCOMMIT': True,  # Enable autocommit for read operations
-}
-
-# Cache settings for better performance
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'TIMEOUT': 300,  # 5 minutes default timeout
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-        }
-    }
-}
