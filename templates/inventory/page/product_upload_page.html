@@ -5,6 +5,7 @@
 {% block title %}{% if product_id %}Edit{% else %}Add{% endif %} Product{% endblock %}
 
 {% block extra_css %}
+<link rel="preload" href="{% static 'css/product-form.css' %}" as="style">
 <link rel="stylesheet" href="{% static 'css/product-form.css' %}">
 {% endblock %}
 

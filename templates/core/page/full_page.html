@@ -6,12 +6,12 @@
 {% block base_page_content %}
     <div class="row">
         <!-- Desktop Sidebar -->
-        <div class="col-lg-2 col-md-4 d-none d-lg-block bg-dark text-white p-3 sidebar"
-             style="height: 100vh; position: sticky; top: 0; overflow-y: auto;">
-            {% block navigation_side %}
-                {% render_navigation %}
-            {% endblock %}
-        </div>
+{#        <div class="col-lg-2 col-md-4 d-none d-lg-block bg-dark text-white p-3 sidebar"#}
+{#             style="height: 100vh; position: sticky; top: 0; overflow-y: auto;">#}
+{#            {% block navigation_side %}#}
+{#                {% render_navigation %}#}
+{#            {% endblock %}#}
+{#        </div>#}
 
         <!-- Main Content Area -->
         <div class="col">
@@ -56,5 +56,5 @@
     </div>
 
     <!-- Mobile Offcanvas Sidebar -->
-    {% include 'core/navigation/side_navigation.html' %}
+{#    {% include 'core/navigation/side_navigation.html' %}#}
 {% endblock %}

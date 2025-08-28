@@ -3,6 +3,7 @@ from django.urls import reverse
 
 register = template.Library()
 
+
 @register.inclusion_tag('core/navigation/navigation.html', takes_context=True)
 def render_navigation(context):
     request = context['request']

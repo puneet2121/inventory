@@ -16,6 +16,8 @@ from django.views.decorators.http import require_http_methods
 import io
 import pandas as pd
 from django.db import connection, reset_queries
+import time
+
 
 def add_customer(request):
     if request.method == 'POST':
@@ -178,6 +180,7 @@ def customer_detail(request, pk):
 
 
 def list_customers(request):
+    start = time.time()
     customers = Customer.objects.all()
     total_customers = customers.count()  # Count the total number of customers
     agg = customers.aggregate(total_debt=Sum('total_debt'))
@@ -189,10 +192,12 @@ def list_customers(request):
         'total_debt': total_debt,
     }
 
+    end = time.time()
+    print(f"Query executed in {end - start}s")
+    start = time.time()
     response = render(request, 'customers/page/list_customers.html', context)
-    print(len(connection.queries), "queries executed")
-    for q in connection.queries:
-        print(q["sql"], q["time"])
+    end = time.time()
+    print(f"View + template render time: {end - start}s")
     return response
 
     # return render(request, 'customers/page/list_customers.html',c )
