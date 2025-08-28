@@ -66,50 +66,50 @@ def create_or_edit_product_info(request, product_id=None):
     return render(request, 'inventory/page/product_upload_page.html', context)
 
 @login_required(login_url='/authentication/login/')
+@permission_required('inventory.view_product', login_url='/authentication/login/',raise_exception=True)
 def item_list_view(request):
-    products = Product.objects.all()  # Fetch all products
-    inventory_data = Inventory.objects.all()  # Fetch inventory data
-
-    # Create a mapping of product to stock
-    product_inventory = {}
-    for inventory in inventory_data:
-        product_id = inventory.product.id
-        if product_id in product_inventory:
-            product_inventory[product_id] += inventory.quantity
-        else:
-            product_inventory[product_id] = inventory.quantity
-
-    # Add stock data to products
-    product_list = [
-        {
-            'id': product.id,
-            'name': product.name,
-            'category': product.category,
-            'cost': product.cost,
-            'price': product.price,
-            'stock': product_inventory.get(product.id, 0)
-        }
-        for product in products
-    ]
-
-    # Compute total inventory value = sum(price * stock)
+    # Optimized: Single query with annotation and aggregation
+    from django.db.models import Sum, F, Value, DecimalField
+    from django.db.models.functions import Coalesce
+    
+    # Get products with inventory data in one optimized query
+    products_with_stock = Product.objects.select_related('category').annotate(
+        total_stock=Coalesce(
+            Sum('inventory__quantity'), 
+            Value(0), 
+            output_field=DecimalField()
+        )
+    ).values(
+        'id', 'name', 'category__name', 'cost', 'price', 'total_stock'
+    )
+    
+    # Convert to list for template
+    product_list = list(products_with_stock)
+    
+    # Compute total inventory value using the annotated data
     total_value = sum(
-        Decimal(str(item['price'])) * Decimal(item['stock'])
+        Decimal(str(item['price'])) * Decimal(str(item['total_stock']))
         for item in product_list
     ) if product_list else Decimal('0.00')
-
+    
+    # Get low stock count efficiently
+    low_stock_count = sum(1 for item in product_list if item['total_stock'] <= 5)
+    
     context = {
         'products': product_list,
-        'total_items': products.count(),
+        'total_items': len(product_list),
         'total_value': total_value,
-        'low_stock_count': products.filter(inventory__lte=5).count(),  # Changed to fixed value of 5
+        'low_stock_count': low_stock_count,
     }
+    
     response = render(request, 'inventory/page/item_list_page.html', context)
+    
+    # Debug: Print query count and timing
     print(len(connection.queries), "queries executed")
     for q in connection.queries:
         print(q["sql"], q["time"])
+    
     return response
-    # return render(request, 'inventory/page/item_list_page.html', context)
 
 
 @login_required(login_url='/authentication/login/')

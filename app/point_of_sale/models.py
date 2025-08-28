@@ -79,6 +79,13 @@ class SalesOrder(TenantAwareModel):
         permissions = [
             ("view_reports", "Can view analytics and reports"),
         ]
+        # Add database indexes for better performance
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['customer', 'status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['tenant_id', 'status']),
+        ]
 
     def save(self, *args, **kwargs):
         # Ensure tenant_id is present before generating order number

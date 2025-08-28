@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from app.customers.models import Customer, CustomerLedger
 from app.point_of_sale.models import Invoice
@@ -32,6 +32,7 @@ def add_customer(request):
     for q in connection.queries:
         print(q["sql"], q["time"])
     return render(request, 'customers/page/add_customer.html', {'form': form})
+
 
 @require_http_methods(["GET", "POST"])
 def import_customers(request):
@@ -169,27 +170,56 @@ def edit_customer(request, pk):
 def customer_detail(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     snapshot = getattr(customer, 'financial_snapshot', None)
-    ledger_entries = CustomerLedger.objects.filter(customer=customer).order_by('-date')
+    
+    # Optimized: Add pagination and select_related for ledger entries
+    ledger_entries = CustomerLedger.objects.filter(
+        customer=customer
+    ).select_related('invoice').order_by('-date')
+    
+    # Add pagination to prevent loading too many records
+    paginator = Paginator(ledger_entries, 50)  # Show 50 entries per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         'customer': customer,
         'snapshot': snapshot,
-        'ledger_entries': ledger_entries,
+        'ledger_entries': page_obj,
     }
     return render(request, 'customers/page/customer_detail.html', context)
 
 
 def list_customers(request):
     start = time.time()
-    customers = Customer.objects.all()
-    total_customers = customers.count()  # Count the total number of customers
-    agg = customers.aggregate(total_debt=Sum('total_debt'))
-    total_debt = agg.get('total_debt') or Decimal('0.00')
+    
+    # Optimized: Use select_related and add search/filtering
+    customers = Customer.objects.select_related().all()
+    
+    # Add search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        customers = customers.filter(
+            Q(name__icontains=search_query) |
+            Q(city__icontains=search_query) |
+            Q(contact__icontains=search_query)
+        )
+    
+    # Add pagination to prevent loading all customers at once
+    paginator = Paginator(customers, 100)  # Show 100 customers per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Optimized: Use database aggregation instead of fetching all records
+    total_customers = customers.count()
+    total_debt = customers.aggregate(
+        total_debt=Sum('total_debt')
+    ).get('total_debt') or Decimal('0.00')
 
     context = {
-        'customers': customers,
+        'customers': page_obj,
         'total_customers': total_customers,
         'total_debt': total_debt,
+        'search_query': search_query,
     }
 
     end = time.time()
@@ -199,8 +229,6 @@ def list_customers(request):
     end = time.time()
     print(f"View + template render time: {end - start}s")
     return response
-
-    # return render(request, 'customers/page/list_customers.html',c )
 
 
 def customers_with_debt(request):

@@ -299,18 +299,20 @@ def convert_to_invoice(request, sales_order_id):
 
 
 # Invoice Views
+@login_required(login_url='/authentication/login/')
 def invoice_list(request):
-    invoices = Invoice.objects.all().select_related('sales_order', 'sales_order__customer')
+    # Optimized: Use select_related and prefetch_related to avoid N+1 queries
+    invoices = Invoice.objects.select_related(
+        'sales_order', 
+        'sales_order__customer'
+    ).prefetch_related('payments').all()
     
-    # Calculate payment and refund totals for each invoice
+    # Calculate payment and refund totals efficiently using the prefetched data
     for invoice in invoices:
-        total_paid = invoice.payments.filter(type='payment').aggregate(
-            total=models.Sum('amount')
-        )['total'] or 0
-        
-        total_refunded = invoice.payments.filter(type='refund').aggregate(
-            total=models.Sum('amount')
-        )['total'] or 0
+        # Use prefetched payments to avoid additional queries
+        payments = invoice.payments.all()
+        total_paid = sum(p.amount for p in payments if p.type == 'payment')
+        total_refunded = sum(p.amount for p in payments if p.type == 'refund')
         
         invoice.net_paid = total_paid - total_refunded
         invoice.total_paid = total_paid

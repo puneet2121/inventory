@@ -92,10 +92,6 @@ def render_navigation(context):
         has_parent_permission = item.get('permission') and user.has_perm(item['permission'])
         has_visible_submenus = bool(item['submenus'])
 
-        # Show parent item if:
-        # - it’s not collapsible (like Dashboard), or
-        # - user has the main permission, or
-        # - user has permission to at least one submenu
         if not item.get('is_collapse', False) or has_parent_permission or has_visible_submenus:
             visible_nav_items.append(item)
 
