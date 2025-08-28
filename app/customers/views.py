@@ -15,8 +15,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 import io
 import pandas as pd
-from django.db import connection, reset_queries
-import time
+
 
 
 def add_customer(request):
@@ -28,9 +27,7 @@ def add_customer(request):
     else:
         form = CustomerForm()
 
-    print(len(connection.queries), "queries executed")
-    for q in connection.queries:
-        print(q["sql"], q["time"])
+
     return render(request, 'customers/page/add_customer.html', {'form': form})
 
 
@@ -190,8 +187,6 @@ def customer_detail(request, pk):
 
 
 def list_customers(request):
-    start = time.time()
-    
     # Optimized: Use select_related and add search/filtering
     customers = Customer.objects.select_related().all()
     
@@ -222,13 +217,7 @@ def list_customers(request):
         'search_query': search_query,
     }
 
-    end = time.time()
-    print(f"Query executed in {end - start}s")
-    start = time.time()
-    response = render(request, 'customers/page/list_customers.html', context)
-    end = time.time()
-    print(f"View + template render time: {end - start}s")
-    return response
+    return render(request, 'customers/page/list_customers.html', context)
 
 
 def customers_with_debt(request):
@@ -245,15 +234,24 @@ def update_customer_snapshot_on_payment(sender, instance, **kwargs):
 
     snapshot, _ = CustomerFinancialSnapshot.objects.get_or_create(customer=customer)
 
-    # Recalculate everything
-    sales_orders = customer.sales_orders.all()
-    total_sales = sum(order.cached_total for order in sales_orders)
+    # Optimized: Use database aggregation instead of Python loops
+    from django.db.models import Sum, F
+    
+    # Get total sales using aggregation
+    total_sales = customer.sales_orders.aggregate(
+        total=Sum('cached_total')
+    ).get('total') or Decimal('0.00')
 
-    # payments = customer.direct_payments.all()  # Advance payments (if allowed)
-    invoice_payments = Payment.objects.filter(invoice__sales_order__customer=customer)
-
-    total_paid = sum(p.amount for p in invoice_payments if p.type == 'payment')
-    total_refunded = sum(p.amount for p in invoice_payments if p.type == 'refund')
+    # Get payment totals using aggregation
+    payment_totals = Payment.objects.filter(
+        invoice__sales_order__customer=customer
+    ).aggregate(
+        total_paid=Sum('amount', filter=Q(type='payment')),
+        total_refunded=Sum('amount', filter=Q(type='refund'))
+    )
+    
+    total_paid = payment_totals.get('total_paid') or Decimal('0.00')
+    total_refunded = payment_totals.get('total_refunded') or Decimal('0.00')
 
     credit_balance = customer.credit_balance if hasattr(customer, 'credit_balance') else Decimal(0)
 

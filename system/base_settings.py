@@ -188,3 +188,21 @@ DATABASES = {
         'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
     }
 }
+
+# Database query optimization
+DB_OPTIMIZATIONS = {
+    'ATOMIC_REQUESTS': False,  # Disable automatic transactions for better performance
+    'AUTOCOMMIT': True,  # Enable autocommit for read operations
+}
+
+# Cache settings for better performance
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes default timeout
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}

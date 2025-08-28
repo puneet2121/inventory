@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from .models import Product, Inventory
-from django.db import connection, reset_queries
+
 
 @login_required(login_url='/authentication/login/')
 @role_required(allowed_roles=['admin', 'manager'])
@@ -104,11 +104,6 @@ def item_list_view(request):
     
     response = render(request, 'inventory/page/item_list_page.html', context)
     
-    # Debug: Print query count and timing
-    print(len(connection.queries), "queries executed")
-    for q in connection.queries:
-        print(q["sql"], q["time"])
-    
     return response
 
 
@@ -162,10 +157,11 @@ def export_inventory(request):
     ]
     ws.append(headers)
 
-    # Query inventory and product data
-    inventory_items = Inventory.objects.select_related('product').all()
+    # Query inventory and product data - optimized for large datasets
+    inventory_items = Inventory.objects.select_related('product').iterator(chunk_size=1000)
 
-    # Populate rows
+    # Populate rows using iterator to prevent memory issues
+    row_count = 0
     for item in inventory_items:
         ws.append([
             item.product.name,
@@ -177,8 +173,12 @@ def export_inventory(request):
             item.product.description,
             item.location,
             item.quantity,
-
         ])
+        row_count += 1
+        
+        # Add progress indicator for large exports
+        if row_count % 1000 == 0:
+            print(f"Exported {row_count} rows...")
 
     # Create response with content type for Excel
     response = HttpResponse(

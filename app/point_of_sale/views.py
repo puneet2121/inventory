@@ -71,8 +71,11 @@ def edit_sales_order(request, sales_order_id):
         messages.error(request, "Cannot edit a sales order that has already been converted to an invoice.")
         return redirect('point_of_sale:sales_order_detail', sales_order_id=sales_order.id)
     
-    # Serialize products for JavaScript
-    products = Product.objects.all().values('id', 'name', 'price', 'barcode', 'model')
+    # Serialize products for JavaScript - optimized query
+    products = Product.objects.select_related('category').values(
+        'id', 'name', 'price', 'barcode', 'model'
+    ).order_by('name')[:1000]  # Limit to 1000 products to prevent memory issues
+    
     products_list = []
     for product in products:
         product_dict = dict(product)
@@ -81,8 +84,9 @@ def edit_sales_order(request, sales_order_id):
         products_list.append(product_dict)
     products_json = json.dumps(products_list)
     
-    customers = Customer.objects.all()
-    employees = EmployeeProfile.objects.all()
+    # Optimize customer and employee queries
+    customers = Customer.objects.values('id', 'name', 'city').order_by('name')[:500]
+    employees = EmployeeProfile.objects.values('id', 'user__username').order_by('user__username')[:100]
     order_items = sales_order.items.all()
 
     if request.method == "POST":
@@ -489,7 +493,11 @@ def quick_checkout(request):
     """
     if request.method == 'GET':
         # Simple UI to test quick checkout; embed product catalog for selection/scanning
-        products = Product.objects.all().values('id', 'name', 'price', 'barcode', 'model')
+        # Optimized: Limit products and use select_related for better performance
+        products = Product.objects.select_related('category').values(
+            'id', 'name', 'price', 'barcode', 'model'
+        ).order_by('name')[:500]  # Limit to 500 products for better performance
+        
         # Convert Decimal to float for JSON serialization
         plist = []
         for p in products:
