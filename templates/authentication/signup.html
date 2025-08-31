@@ -23,6 +23,17 @@
           </div>
 
           <div class="mb-3">
+            <label for="id_company_type" class="form-label">Business Type</label>
+            <select name="company_type" id="id_company_type" class="form-select{% if form.company_type.errors %} is-invalid{% endif %}">
+              <option value="retail" {% if form.company_type.value == 'retail' %}selected{% endif %}>Retail</option>
+              <option value="wholesale" {% if form.company_type.value == 'wholesale' or not form.company_type.value %}selected{% endif %}>Wholesale</option>
+            </select>
+            {% for error in form.company_type.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
             <label for="id_first_name" class="form-label">First Name</label>
             <input type="text" name="first_name" class="form-control{% if form.first_name.errors %} is-invalid{% endif %}" id="id_first_name" value="{{ form.first_name.value|default:'' }}" required>
             {% for error in form.first_name.errors %}
