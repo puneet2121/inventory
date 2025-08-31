@@ -17,6 +17,8 @@ import io
 import pandas as pd
 from django.db import connection, reset_queries
 import time
+from django.http import JsonResponse
+from django.db.models import Q
 
 
 def add_customer(request):
@@ -32,6 +34,72 @@ def add_customer(request):
     for q in connection.queries:
         print(q["sql"], q["time"])
     return render(request, 'customers/page/add_customer.html', {'form': form})
+
+
+@require_http_methods(["GET"])
+def customers_search(request):
+    query = (request.GET.get('query') or '').strip()
+    qs = Customer.objects.all()
+    if query:
+        qs = qs.filter(
+            Q(name__icontains=query) |
+            Q(contact__icontains=query) |
+            Q(shop__icontains=query)
+        )
+    results = list(qs.order_by('name')[:20].values('id', 'name', 'contact', 'shop', 'city'))
+    return JsonResponse({'results': results})
+
+
+@require_http_methods(["POST"])
+def customers_quick_create(request):
+    name = (request.POST.get('name') or '').strip()
+    contact = (request.POST.get('contact') or '').strip()
+    city = (request.POST.get('city') or '').strip() or 'Unknown'
+    shop = (request.POST.get('shop') or '').strip() or None
+    email = (request.POST.get('email') or '').strip() or None
+
+    if not name:
+        return JsonResponse({'error': 'Name is required'}, status=400)
+
+    if contact:
+        customer, _ = Customer.objects.get_or_create(
+            contact=contact,
+            defaults={
+                'name': name,
+                'city': city,
+                'customer_type': 'C',
+                'shop': shop,
+                'email': email,
+            }
+        )
+        changed = False
+        if customer.name != name:
+            customer.name = name; changed = True
+        if customer.city != city:
+            customer.city = city; changed = True
+        if (customer.shop or '') != (shop or ''):
+            customer.shop = shop; changed = True
+        if (customer.email or '') != (email or ''):
+            customer.email = email; changed = True
+        if changed:
+            customer.save()
+    else:
+        customer = Customer.objects.create(
+            name=name,
+            city=city,
+            customer_type='C',
+            contact='',
+            shop=shop,
+            email=email,
+        )
+
+    return JsonResponse({
+        'id': customer.id,
+        'name': customer.name,
+        'contact': customer.contact,
+        'shop': customer.shop,
+        'city': customer.city,
+    })
 
 
 @require_http_methods(["GET", "POST"])
@@ -201,12 +269,11 @@ def list_customers(request):
     print(f"View + template render time: {end - start}s")
     return response
 
-    # return render(request, 'customers/page/list_customers.html',c )
-
 
 def customers_with_debt(request):
     customers = Customer.objects.filter(debt__gt=0)
     return render(request, 'customers/page/customers_with_debt.html', {'customers': customers})
+
 
 @receiver(post_save, sender=Payment)
 def update_customer_snapshot_on_payment(sender, instance, **kwargs):

@@ -4,6 +4,11 @@ from django.contrib.auth.models import User
 
 class SignupForm(forms.Form):
     company_name = forms.CharField(max_length=255, label="Company Name")
+    company_type = forms.ChoiceField(
+        choices=[('retail', 'Retail'), ('wholesale', 'Wholesale')],
+        label="Business Type",
+        initial='wholesale'
+    )
     first_name = forms.CharField(max_length=150, label="first name")
     last_name = forms.CharField(max_length=150, label="last name")
     username = forms.CharField(max_length=150, label="Username")

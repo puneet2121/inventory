@@ -20,7 +20,7 @@ from django.db import transaction
 from ..customers.models import Customer
 from ..inventory.models import Product
 from ..employee.models import EmployeeProfile
-
+from app.core.models import Company
 
 # Sales Order Views
 @login_required(login_url='/authentication/login/')
@@ -87,7 +87,7 @@ def edit_sales_order(request, sales_order_id):
 
     if request.method == "POST":
         sales_order_form = SalesOrderForm(request.POST, instance=sales_order)
-        
+
         if sales_order_form.is_valid():
             try:
                 with transaction.atomic():
@@ -96,20 +96,20 @@ def edit_sales_order(request, sales_order_id):
                         # TODO: Add inventory restoration logic here if needed
                         sales_order.status = 'draft'
                         sales_order.save()
-                    
+
                     updated_sales_order = sales_order_form.save()
-                    
+
                     # Delete existing items and recreate them
                     sales_order.items.all().delete()
-                    
+
                     # Process items from the frontend
                     total_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
-                    
+
                     for i in range(total_forms):
                         product_id = request.POST.get(f'items-{i}-product')
                         quantity = request.POST.get(f'items-{i}-quantity')
                         price = request.POST.get(f'items-{i}-price')
-                        
+
                         if product_id and quantity and price:
                             try:
                                 product = Product.objects.get(id=product_id)
@@ -137,9 +137,9 @@ def edit_sales_order(request, sales_order_id):
                             'customers': customers,
                             'employees': employees
                         })
-                    
+
                     return redirect('point_of_sale:sales_order_detail', sales_order_id=updated_sales_order.id)
-                    
+
             except Exception as e:
                 messages.error(request, f"Error updating sales order: {str(e)}")
         else:
@@ -148,10 +148,7 @@ def edit_sales_order(request, sales_order_id):
                     messages.error(request, f"{field}: {error}")
     else:
         # Initialize form with existing data
-        initial_data = {
-            'customer_name': sales_order.customer.name if sales_order.customer and sales_order.customer.city == 'Walk-in' else ''
-        }
-        sales_order_form = SalesOrderForm(instance=sales_order, initial=initial_data)
+        sales_order_form = SalesOrderForm(instance=sales_order)
 
     return render(request, 'point_of_sale/edit_sales_order.html', {
         'sales_order_form': sales_order_form,
@@ -200,7 +197,7 @@ def create_sales_order(request):
             try:
                 with transaction.atomic():
                     sales_order = sales_order_form.save()
-                    
+
                     # Process items from the frontend
                     total_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
                     for i in range(total_forms):
@@ -227,8 +224,29 @@ def create_sales_order(request):
                     # Finalize the order: update cached_total and decrease inventory
                     try:
                         sales_order.finalize_order()
+                        # Auto-invoice and full payment for retail companies
+                        try:
+                            tenant_id = getattr(getattr(request.user, 'employee_profile', None), 'tenant_id', None)
+                            company = Company.objects.filter(id=tenant_id).first()
+                            if company and company.company_type == 'retail' and not hasattr(sales_order, 'invoice'):
+                                invoice = Invoice.objects.create(
+                                    sales_order=sales_order,
+                                    total_invoice_amount=sales_order.cached_total,
+                                    created_by=request.user,
+                                )
+                                # Record full payment (default to cash)
+                                Payment.objects.create(
+                                    invoice=invoice,
+                                    amount=invoice.total_invoice_amount,
+                                    payment_method='cash',
+                                    received_by=request.user,
+                                )
+                                invoice.update_cached_paid_amount()
+                        except Exception as e:
+                            # Do not block order creation if auto-invoice fails; log message for now
+                            messages.warning(request, f"Order created, but auto-invoice/payment failed: {str(e)}")
                         messages.success(request, f"Sales order {sales_order.order_number} created and inventory updated successfully!")
-                        return redirect('point_of_sale:sales_order_detail', sales_order_id=sales_order.id)
+                        return redirect('point_of_sale:sales_order_list')
                     except ValidationError as e:
                         messages.error(request, f"Error finalizing order: {str(e)}")
                         # Delete the sales order if finalization fails
@@ -243,9 +261,7 @@ def create_sales_order(request):
             except Exception as e:
                 messages.error(request, f"Error creating sales order: {str(e)}")
         else:
-            for field, errors in sales_order_form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
+            messages.error(request, "Invalid sales order input.")
     else:
         sales_order_form = SalesOrderForm()
 
@@ -275,26 +291,20 @@ def convert_to_invoice(request, sales_order_id):
     sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
     if not hasattr(sales_order, 'invoice'):
         with transaction.atomic():
-            # Generate a unique invoice number
-            last_invoice = Invoice.objects.order_by('-id').first()
-            next_number = (last_invoice.id + 1) if last_invoice else 1
-            invoice_number = f"INV-{next_number:05d}"
-
             # Update customer debt when invoice is generated
             if sales_order.customer and hasattr(sales_order.customer, 'total_debt'):
                 sales_order.customer.total_debt += sales_order.cached_total
                 sales_order.customer.save()
-            
+
             invoice = Invoice.objects.create(
                 sales_order=sales_order,
                 total_invoice_amount=sales_order.cached_total,
-                invoice_number=invoice_number,
             )
-            
-            messages.success(request, f"Sales order {sales_order.order_number} has been converted to invoice {invoice_number}! Customer debt updated.")
+
+            messages.success(request, f"Sales order {sales_order.order_number} has been converted to invoice {invoice.invoice_number}! Customer debt updated.")
     else:
         messages.info(request, f"Sales order {sales_order.order_number} is already converted to an invoice.")
-    
+
     return redirect('point_of_sale:invoice_list')
 
 

@@ -8,13 +8,6 @@ from django.db import models
 
 
 class SalesOrderForm(forms.ModelForm):
-    customer_name = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter customer name for walk-in'
-        })
-    )
     note = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={
@@ -26,16 +19,11 @@ class SalesOrderForm(forms.ModelForm):
 
     class Meta:
         model = SalesOrder
-        fields = ['customer', 'customer_type', 'employee', 'note']
+        fields = ['customer', 'employee', 'note']
         widgets = {
             'customer': forms.Select(attrs={
                 'class': 'form-select',
-                'x-model': 'selectedCustomer',
-                '@change': 'handleCustomerChange()'
-            }),
-            'customer_type': forms.Select(attrs={
-                'class': 'form-select',
-                'x-model': 'customerType'
+                'x-model': 'selectedCustomer'
             }),
             'employee': forms.Select(attrs={
                 'class': 'form-select'
@@ -45,46 +33,22 @@ class SalesOrderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['customer'].queryset = Customer.objects.all()
-        self.fields['customer'].empty_label = "Select a customer (optional)"
+        self.fields['customer'].empty_label = "Select a customer"
         self.fields['employee'].queryset = EmployeeProfile.objects.all()
         self.fields['employee'].empty_label = "Select an employee"
-        self.fields['customer'].required = False
+        self.fields['customer'].required = True
         self.fields['employee'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
         customer = cleaned_data.get('customer')
-        customer_name = cleaned_data.get('customer_name')
-        customer_type = cleaned_data.get('customer_type')
 
-        if customer_type == 'registered' and not customer:
-            raise forms.ValidationError("A registered customer must be selected.")
-        if customer_type == 'walk_in' and not customer_name:
-            raise forms.ValidationError("Customer name is required for walk-in customers.")
+        if not customer:
+            raise forms.ValidationError("Please select a customer.")
         return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        customer_type = self.cleaned_data.get('customer_type')
-        customer_name = self.cleaned_data.get('customer_name')
-
-        if customer_type == 'walk_in' and customer_name:
-            # Try to reuse or create a walk-in customer
-            customer, created = Customer.objects.get_or_create(
-                name=customer_name.strip(),
-                defaults={
-                    'city': 'Walk-in',
-                    'customer_type': 'C',
-                    'contact': '0000000000'
-                }
-            )
-            instance.customer = customer
-
-        # Auto-generate order number if not present
-        if not instance.order_number:
-            last_order = SalesOrder.objects.order_by('-id').first()
-            next_number = (last_order.id + 1) if last_order else 1
-            instance.order_number = f"SO-{next_number:05d}"
 
         if commit:
             instance.save()

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import (add_customer, list_customers, customers_with_debt, edit_customer, customer_detail, import_customers)
+from .views import (add_customer, list_customers, customers_with_debt, edit_customer, customer_detail, import_customers, customers_search, customers_quick_create)
 app_name = 'customers'
 
 
@@ -10,5 +10,8 @@ urlpatterns = [
     path('edit/<int:pk>/', edit_customer, name='edit_customer'),
     path('customer/<int:pk>/', customer_detail, name='customer_detail'),
     path('import/', import_customers, name='import_customers'),
+    # JSON APIs for POS customer search and quick add
+    path('search/', customers_search, name='customers_search'),
+    path('quick_create/', customers_quick_create, name='customers_quick_create'),
 
 ]

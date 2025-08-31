@@ -37,13 +37,14 @@ def signup_view(request):
         form = SignupForm(request.POST)
         if form.is_valid():
             company_name = form.cleaned_data['company_name']
+            company_type = form.cleaned_data['company_type']
             username = form.cleaned_data['username']
             first_name = form.cleaned_data['first_name']
             last_name = form.cleaned_data['last_name']
             password = form.cleaned_data['password1']
 
             # Create company
-            company = Company.objects.create(name=company_name)
+            company = Company.objects.create(name=company_name, company_type=company_type)
 
             # Create user
             user = User.objects.create_user(

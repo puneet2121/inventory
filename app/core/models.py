@@ -36,7 +36,11 @@ class TenantAwareModel(models.Model):
 
 class Company(models.Model):
     name = models.CharField(max_length=255)
+    COMPANY_TYPE_CHOICES = [
+        ('retail', 'Retail'),
+        ('wholesale', 'Wholesale'),
+    ]
+    company_type = models.CharField(max_length=20, choices=COMPANY_TYPE_CHOICES, default='wholesale')
 
     def __str__(self):
         return self.name
-
