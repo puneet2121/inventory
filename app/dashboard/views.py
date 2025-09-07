@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.utils import timezone
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, time
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
@@ -36,46 +36,53 @@ class DecimalEncoder(json.JSONEncoder):
 @permission_required('point_of_sale.view_reports', login_url='/authentication/login/', raise_exception=True)
 def sales_trend_api(request, period):
     """API endpoint for sales trend data"""
-    today = timezone.now().date()
-    
+    today = timezone.localdate()
+    tz = timezone.get_current_timezone()
+
     if period == 'week':
-        # Last 7 days
+        # Last 7 days (local date boundaries)
         labels = []
         values = []
         for i in range(7):
-            date = today - timedelta(days=i)
+            date_i = today - timedelta(days=i)
+            start = timezone.make_aware(datetime.combine(date_i, time.min), tz)
+            end = timezone.make_aware(datetime.combine(date_i + timedelta(days=1), time.min), tz)
             orders_for_date = SalesOrder.objects.filter(
-                created_at__date=date,
+                created_at__gte=start,
+                created_at__lt=end,
                 status='completed'
             )
             order_items_for_date = OrderItem.objects.filter(sales_order__in=orders_for_date)
             daily_sales = sum(item.quantity * item.price for item in order_items_for_date)
-            labels.insert(0, date.strftime('%b %d'))
+            labels.insert(0, date_i.strftime('%b %d'))
             values.insert(0, float(daily_sales))
     
     elif period == 'month':
-        # Last 30 days
+        # Last 30 days (local date boundaries)
         labels = []
         values = []
         for i in range(30):
-            date = today - timedelta(days=i)
+            date_i = today - timedelta(days=i)
+            start = timezone.make_aware(datetime.combine(date_i, time.min), tz)
+            end = timezone.make_aware(datetime.combine(date_i + timedelta(days=1), time.min), tz)
             orders_for_date = SalesOrder.objects.filter(
-                created_at__date=date,
+                created_at__gte=start,
+                created_at__lt=end,
                 status='completed'
             )
             order_items_for_date = OrderItem.objects.filter(sales_order__in=orders_for_date)
             daily_sales = sum(item.quantity * item.price for item in order_items_for_date)
-            labels.insert(0, date.strftime('%b %d'))
+            labels.insert(0, date_i.strftime('%b %d'))
             values.insert(0, float(daily_sales))
     
     elif period == 'year':
-        # Last 12 months
+        # Last 12 months (approximate 30-day months using local boundaries)
         labels = []
         values = []
         for i in range(12):
             month_start_date = today.replace(day=1) - timedelta(days=30*i)
-            month_start = timezone.make_aware(datetime.combine(month_start_date, datetime.min.time()))
-            month_end = timezone.make_aware(datetime.combine(month_start_date + timedelta(days=30), datetime.min.time()))
+            month_start = timezone.make_aware(datetime.combine(month_start_date, time.min), tz)
+            month_end = timezone.make_aware(datetime.combine(month_start_date + timedelta(days=30), time.min), tz)
             orders_month = SalesOrder.objects.filter(
                 created_at__gte=month_start,
                 created_at__lt=month_end,
@@ -91,14 +98,17 @@ def sales_trend_api(request, period):
         labels = []
         values = []
         for i in range(7):
-            date = today - timedelta(days=i)
+            date_i = today - timedelta(days=i)
+            start = timezone.make_aware(datetime.combine(date_i, time.min), tz)
+            end = timezone.make_aware(datetime.combine(date_i + timedelta(days=1), time.min), tz)
             orders_for_date = SalesOrder.objects.filter(
-                created_at__date=date,
+                created_at__gte=start,
+                created_at__lt=end,
                 status='completed'
             )
             order_items_for_date = OrderItem.objects.filter(sales_order__in=orders_for_date)
             daily_sales = sum(item.quantity * item.price for item in order_items_for_date)
-            labels.insert(0, date.strftime('%b %d'))
+            labels.insert(0, date_i.strftime('%b %d'))
             values.insert(0, float(daily_sales))
     
     return JsonResponse({
@@ -110,18 +120,33 @@ def sales_trend_api(request, period):
 @login_required(login_url='/authentication/login/')
 @permission_required('point_of_sale.view_reports', login_url='/authentication/login/', raise_exception=True)
 def dashboard_view(request):
-    today = timezone.now().date()
+    today = timezone.localdate()
+    tz = timezone.get_current_timezone()
+
+    # Local-day boundaries for today, yesterday, and month ranges
+    start_today = timezone.make_aware(datetime.combine(today, time.min), tz)
+    end_today = timezone.make_aware(datetime.combine(today + timedelta(days=1), time.min), tz)
+
     yesterday = today - timedelta(days=1)
-    this_month = today.replace(day=1)
-    last_month = (this_month - timedelta(days=1)).replace(day=1)
-    
+    start_yesterday = timezone.make_aware(datetime.combine(yesterday, time.min), tz)
+    end_yesterday = start_today
+
+    this_month_date = today.replace(day=1)
+    start_this_month = timezone.make_aware(datetime.combine(this_month_date, time.min), tz)
+    # Next month start (handle December rollover roughly with +31 days then replace)
+    next_month_date = (this_month_date + timedelta(days=31)).replace(day=1)
+    start_next_month = timezone.make_aware(datetime.combine(next_month_date, time.min), tz)
+
+    last_month_date = (this_month_date - timedelta(days=1)).replace(day=1)
+    start_last_month = timezone.make_aware(datetime.combine(last_month_date, time.min), tz)
+
     # Today's Sales
-    orders_today = SalesOrder.objects.filter(created_at__date=today, status='completed')
+    orders_today = SalesOrder.objects.filter(created_at__gte=start_today, created_at__lt=end_today, status='completed')
     order_items_today = OrderItem.objects.filter(sales_order__in=orders_today)
     total_sales_today = sum(item.quantity * item.price for item in order_items_today)
     
     # Yesterday's Sales for comparison
-    orders_yesterday = SalesOrder.objects.filter(created_at__date=yesterday, status='completed')
+    orders_yesterday = SalesOrder.objects.filter(created_at__gte=start_yesterday, created_at__lt=end_yesterday, status='completed')
     order_items_yesterday = OrderItem.objects.filter(sales_order__in=orders_yesterday)
     total_sales_yesterday = sum(item.quantity * item.price for item in order_items_yesterday)
     
@@ -133,7 +158,8 @@ def dashboard_view(request):
     
     # Monthly Sales
     orders_this_month = SalesOrder.objects.filter(
-        created_at__gte=this_month,
+        created_at__gte=start_this_month,
+        created_at__lt=start_next_month,
         status='completed'
     )
     order_items_this_month = OrderItem.objects.filter(sales_order__in=orders_this_month)
@@ -141,8 +167,8 @@ def dashboard_view(request):
     
     # Last month's sales for comparison
     orders_last_month = SalesOrder.objects.filter(
-        created_at__gte=last_month,
-        created_at__lt=this_month,
+        created_at__gte=start_last_month,
+        created_at__lt=start_this_month,
         status='completed'
     )
     order_items_last_month = OrderItem.objects.filter(sales_order__in=orders_last_month)
@@ -185,28 +211,32 @@ def dashboard_view(request):
     sales_trend_data = []
     sales_trend_labels = []
     for i in range(7):
-        date = today - timedelta(days=i)
+        date_i = today - timedelta(days=i)
+        start = timezone.make_aware(datetime.combine(date_i, time.min), tz)
+        end = timezone.make_aware(datetime.combine(date_i + timedelta(days=1), time.min), tz)
         orders_for_date = SalesOrder.objects.filter(
-            created_at__date=date,
+            created_at__gte=start,
+            created_at__lt=end,
             status='completed'
         )
         order_items_for_date = OrderItem.objects.filter(sales_order__in=orders_for_date)
         daily_sales = sum(item.quantity * item.price for item in order_items_for_date)
         sales_trend_data.insert(0, float(daily_sales))
-        sales_trend_labels.insert(0, date.strftime('%b %d'))
+        sales_trend_labels.insert(0, date_i.strftime('%b %d'))
     
     # If no sales data, provide sample data for demonstration
     if not any(sales_trend_data):
         sales_trend_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         sales_trend_labels = []
         for i in range(6, -1, -1):
-            date = today - timedelta(days=i)
-            sales_trend_labels.insert(0, date.strftime('%b %d'))
+            date_i = today - timedelta(days=i)
+            sales_trend_labels.insert(0, date_i.strftime('%b %d'))
 
     # Top Selling Products (last 30 days)
     thirty_days_ago = today - timedelta(days=30)
+    start_30 = timezone.make_aware(datetime.combine(thirty_days_ago, time.min), tz)
     recent_orders_30_days = SalesOrder.objects.filter(
-        created_at__gte=thirty_days_ago,
+        created_at__gte=start_30,
         status='completed'
     )
     order_items_30_days = OrderItem.objects.filter(sales_order__in=recent_orders_30_days)
@@ -240,12 +270,13 @@ def dashboard_view(request):
     if not category_sales:
         category_sales = {"Electronics": 1500.0, "Clothing": 800.0, "Books": 300.0}
     
-    # Monthly Sales Data for Chart
+    # Monthly Sales Data for Chart (last 6 months using local boundaries)
     monthly_sales_data = []
     monthly_labels = []
     for i in range(6):
-        month_start = timezone.make_aware(datetime.combine(this_month - timedelta(days=30*i), datetime.min.time()))
-        month_end = timezone.make_aware(datetime.combine(month_start.date() + timedelta(days=30), datetime.min.time()))
+        month_start_date = this_month_date - timedelta(days=30*i)
+        month_start = timezone.make_aware(datetime.combine(month_start_date, time.min), tz)
+        month_end = timezone.make_aware(datetime.combine((month_start_date + timedelta(days=31)).replace(day=1), time.min), tz)
         orders_month = SalesOrder.objects.filter(
             created_at__gte=month_start,
             created_at__lt=month_end,
@@ -261,7 +292,7 @@ def dashboard_view(request):
         monthly_sales_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         monthly_labels = []
         for i in range(5, -1, -1):
-            month_date = this_month - timedelta(days=30*i)
+            month_date = this_month_date - timedelta(days=30*i)
             monthly_labels.insert(0, month_date.strftime('%b %Y'))
  
     

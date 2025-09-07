@@ -24,7 +24,7 @@ class SalesOrder(TenantAwareModel):
                                      default='walk_in')
     employee = models.ForeignKey(EmployeeProfile, on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name="sales_orders")
-    location = models.CharField(max_length=100, default='Main Store')  # Add default location
+    location = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='draft')
     note = models.TextField(blank=True, null=True)
     order_number = models.CharField(max_length=20, blank=True, null=True)
@@ -39,31 +39,41 @@ class SalesOrder(TenantAwareModel):
             raise ValidationError("Order is already completed.")
 
         with transaction.atomic():
-            # Check inventory availability per location
+            # Validate inventory availability across ALL locations for each item
             for item in self.items.select_related('product').all():
-                try:
-                    inventory = Inventory.objects.get(product=item.product, location=self.location)
-                except Inventory.DoesNotExist:
-                    raise ValidationError(f"No inventory record found for {item.product.name} at {self.location}")
+                total_available = (Inventory.objects
+                                   .filter(product=item.product)
+                                   .aggregate(total=models.Sum('quantity'))['total'] or 0)
+                if total_available < item.quantity:
+                    raise ValidationError(f"Not enough stock for {item.product.name}")
 
-                if inventory.quantity < item.quantity:
-                    raise ValidationError(f"Not enough stock for {item.product.name} at {self.location}")
-
-            # Deduct inventory after all validations pass
+            # Deduct inventory from available locations (no dependency on SalesOrder.location)
             for item in self.items.select_related('product').all():
-                inventory = Inventory.objects.get(product=item.product, location=self.location)
-                inventory.quantity -= item.quantity
-                inventory.save()
-                # Log stock movement for sale (outbound)
-                StockMovement.objects.create(
-                    product=item.product,
-                    location=self.location,
-                    change_type=StockMovementType.SALE,
-                    quantity_change=-(item.quantity),
-                    related_sales_order=self,
-                    tenant_id=self.tenant_id,
-                    note=f"SO {self.order_number or self.id} finalized"
-                )
+                qty_to_deduct = item.quantity
+                # Fetch inventories with stock for this product, order by quantity desc to reduce rows
+                inventories = list(Inventory.objects.select_for_update()
+                                   .filter(product=item.product, quantity__gt=0)
+                                   .order_by('-quantity'))
+                for inv in inventories:
+                    if qty_to_deduct <= 0:
+                        break
+                    deduct = min(inv.quantity, qty_to_deduct)
+                    inv.quantity -= deduct
+                    inv.save()
+                    qty_to_deduct -= deduct
+                    # Log stock movement for sale (outbound) per inventory location
+                    StockMovement.objects.create(
+                        product=item.product,
+                        location=inv.location,
+                        change_type=StockMovementType.SALE,
+                        quantity_change=-(deduct),
+                        related_sales_order=self,
+                        tenant_id=self.tenant_id,
+                        note=f"SO {self.order_number or self.id} finalized"
+                    )
+                if qty_to_deduct > 0:
+                    # This should not happen due to earlier validation, but keep as safety
+                    raise ValidationError(f"Insufficient stock while deducting for {item.product.name}")
 
             # Finalize order
             self.cached_total = self.total_price

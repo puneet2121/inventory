@@ -2,7 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 from .models import SalesOrder, OrderItem, Payment
 from app.customers.models import Customer
-from app.inventory.models import Product
+from app.inventory.models import Product, Inventory
 from app.employee.models import EmployeeProfile
 from django.db import models
 
@@ -77,10 +77,12 @@ class OrderItemForm(forms.ModelForm):
         quantity = cleaned_data.get('quantity')
 
         if product and quantity:
-            inventory = getattr(product, 'inventory', None)
-            if inventory and inventory.quantity < quantity:
+            total_available = (Inventory.objects
+                               .filter(product=product)
+                               .aggregate(total=models.Sum('quantity'))['total'] or 0)
+            if total_available < quantity:
                 raise forms.ValidationError(
-                    f"Not enough inventory for {product.name}. Available: {inventory.quantity}"
+                    f"Not enough inventory for {product.name}. Available across all locations: {total_available}"
                 )
         return cleaned_data
 

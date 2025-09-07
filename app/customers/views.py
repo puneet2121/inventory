@@ -285,7 +285,6 @@ def customers_with_debt(request):
 
 
 @receiver(post_save, sender=Payment)
-@login_required(login_url='/authentication/login/')
 def update_customer_snapshot_on_payment(sender, instance, **kwargs):
     invoice = instance.invoice
     customer = invoice.sales_order.customer

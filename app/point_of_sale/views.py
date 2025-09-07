@@ -497,7 +497,6 @@ def quick_checkout(request):
 
     Expected JSON body:
     {
-      "location": "Main Store",
       "items": [ {"product_id": 1, "quantity": 2, "price": 199.99}, ... ],
       "payment_method": "cash|card|upi"
     }
@@ -521,7 +520,6 @@ def quick_checkout(request):
 
     items = data.get('items', [])
     payment_method = data.get('payment_method', 'cash')
-    location = data.get('location', 'Main Store')
 
     if not items:
         return JsonResponse({"error": "No items provided"}, status=400)
@@ -543,7 +541,6 @@ def quick_checkout(request):
         customer=walkin_customer,
         customer_type='walk_in',
         employee=EmployeeProfile.objects.filter(user=request.user).first(),
-        location=location,
         status='draft'
     )
 
