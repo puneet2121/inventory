@@ -7,7 +7,7 @@ from .models import Bill, PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus,
 from app.purchase.forms import BillForm, PurchaseOrderForm, PurchaseOrderItemFormSet, VendorForm
 
 # Create your views here.
-@login_required
+@login_required(login_url='/authentication/login/')
 def create_bill(request):
     form = BillForm(request.POST or None)
     if form.is_valid():
@@ -15,7 +15,7 @@ def create_bill(request):
         return redirect('purchase:bill_list')
     return render(request, 'purchase/page/bill_create_edit.html', {'form': form})
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def bill_edit(request, pk):
     bill = get_object_or_404(Bill, pk=pk)
     form = BillForm(request.POST or None, instance=bill)
@@ -24,7 +24,7 @@ def bill_edit(request, pk):
         return redirect('purchase:bill_list')
     return render(request, 'purchase/page/bill_create_edit.html', {'form': form})
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def bill_delete(request, pk):
     bill = get_object_or_404(Bill, pk=pk)
     if request.method == 'POST':
@@ -32,17 +32,19 @@ def bill_delete(request, pk):
         return redirect('purchase:bill_list')
     return render(request, 'purchase/page/bill_confirm_delete.html', {'bill': bill})
 
+
+@login_required(login_url='/authentication/login/')
 def bill_list(request):
     bills = Bill.objects.select_related('paid_to__user').order_by('-bill_date')
     return render(request, 'purchase/page/bill_list.html', {'bills': bills})
 
 # Purchase Orders
-@login_required
+@login_required(login_url='/authentication/login/')
 def purchase_order_list(request):
     pos = PurchaseOrder.objects.select_related('vendor').prefetch_related('items__product').order_by('-created_at')
     return render(request, 'purchase/page/purchase_order_list.html', {'pos': pos})
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def purchase_order_create(request):
     po = PurchaseOrder()
     form = PurchaseOrderForm(request.POST or None, instance=po)
@@ -60,7 +62,7 @@ def purchase_order_create(request):
         'is_edit': False,
     })
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def purchase_order_edit(request, pk):
     po = get_object_or_404(PurchaseOrder, pk=pk)
     if po.status == PurchaseOrderStatus.RECEIVED:
@@ -80,7 +82,7 @@ def purchase_order_edit(request, pk):
         'is_edit': True,
     })
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def purchase_order_receive(request, pk):
     po = get_object_or_404(PurchaseOrder, pk=pk)
     if request.method == 'POST':
@@ -95,12 +97,12 @@ def purchase_order_receive(request, pk):
     return render(request, 'purchase/page/purchase_order_receive_confirm.html', {'po': po})
 
 # Vendors
-@login_required
+@login_required(login_url='/authentication/login/')
 def vendor_list(request):
     vendors = Vendor.objects.all().order_by('name')
     return render(request, 'purchase/page/vendor_list.html', {'vendors': vendors})
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def vendor_create(request):
     form = VendorForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -109,7 +111,8 @@ def vendor_create(request):
         return redirect('purchase:vendor_list')
     return render(request, 'purchase/page/vendor_form.html', {'form': form, 'is_edit': False})
 
-@login_required
+
+@login_required(login_url='/authentication/login/')
 def vendor_edit(request, pk):
     vendor = get_object_or_404(Vendor, pk=pk)
     form = VendorForm(request.POST or None, instance=vendor)
@@ -119,7 +122,7 @@ def vendor_edit(request, pk):
         return redirect('purchase:vendor_list')
     return render(request, 'purchase/page/vendor_form.html', {'form': form, 'is_edit': True, 'vendor': vendor})
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def vendor_delete(request, pk):
     vendor = get_object_or_404(Vendor, pk=pk)
     if request.method == 'POST':

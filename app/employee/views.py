@@ -39,7 +39,7 @@ def delete_employee(request, pk):
     employee.delete()  # Delete the record
     return redirect('employee:employee_list')  # Redirect back to the list
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def assignment_create(request):
     selected_date = request.GET.get('date')
     if request.method == 'POST':
@@ -54,12 +54,12 @@ def assignment_create(request):
     return render(request, 'employee/page/assignment_form.html', {'form': form})
 
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def assignment_calendar(request):
     return render(request, 'employee/page/assignment_calendar.html')
 
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def assignment_events(request):
     assignments = EmployeeAssignment.objects.select_related('employee')
     events = []

@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.shortcuts import render, get_object_or_404, redirect
 from app.customers.models import Customer, CustomerLedger
@@ -21,6 +22,7 @@ from django.http import JsonResponse
 from django.db.models import Q
 
 
+@login_required(login_url='/authentication/login/')
 def add_customer(request):
     if request.method == 'POST':
         form = CustomerForm(request.POST)
@@ -37,6 +39,7 @@ def add_customer(request):
 
 
 @require_http_methods(["GET"])
+@login_required(login_url='/authentication/login/')
 def customers_search(request):
     query = (request.GET.get('query') or '').strip()
     qs = Customer.objects.all()
@@ -51,6 +54,7 @@ def customers_search(request):
 
 
 @require_http_methods(["POST"])
+@login_required(login_url='/authentication/login/')
 def customers_quick_create(request):
     name = (request.POST.get('name') or '').strip()
     contact = (request.POST.get('contact') or '').strip()
@@ -103,6 +107,7 @@ def customers_quick_create(request):
 
 
 @require_http_methods(["GET", "POST"])
+@login_required(login_url='/authentication/login/')
 def import_customers(request):
     """
     Bulk import customers from CSV or Excel.
@@ -221,6 +226,7 @@ def import_customers(request):
     return redirect('customers:list_customers')
 
 
+@login_required(login_url='/authentication/login/')
 def edit_customer(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
 
@@ -235,6 +241,7 @@ def edit_customer(request, pk):
     return render(request, 'customers/page/add_customer.html', {'form': form, 'edit_mode': True})
 
 
+@login_required(login_url='/authentication/login/')
 def customer_detail(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     snapshot = getattr(customer, 'financial_snapshot', None)
@@ -248,6 +255,7 @@ def customer_detail(request, pk):
     return render(request, 'customers/page/customer_detail.html', context)
 
 
+@login_required(login_url='/authentication/login/')
 def list_customers(request):
     start = time.time()
     customers = Customer.objects.all()
@@ -270,12 +278,14 @@ def list_customers(request):
     return response
 
 
+@login_required(login_url='/authentication/login/')
 def customers_with_debt(request):
     customers = Customer.objects.filter(debt__gt=0)
     return render(request, 'customers/page/customers_with_debt.html', {'customers': customers})
 
 
 @receiver(post_save, sender=Payment)
+@login_required(login_url='/authentication/login/')
 def update_customer_snapshot_on_payment(sender, instance, **kwargs):
     invoice = instance.invoice
     customer = invoice.sales_order.customer

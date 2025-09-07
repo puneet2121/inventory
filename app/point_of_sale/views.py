@@ -273,6 +273,7 @@ def create_sales_order(request):
     })
 
 
+@login_required(login_url='/authentication/login/')
 def add_order_items(request, sales_order_id):
     sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
     if request.method == 'POST':
@@ -287,6 +288,7 @@ def add_order_items(request, sales_order_id):
     return render(request, 'point_of_sale/sales_order_detail.html', {'sales_order': sales_order, 'form': form})
 
 
+@login_required(login_url='/authentication/login/')
 def convert_to_invoice(request, sales_order_id):
     sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
     if not hasattr(sales_order, 'invoice'):
@@ -309,6 +311,7 @@ def convert_to_invoice(request, sales_order_id):
 
 
 # Invoice Views
+@login_required(login_url='/authentication/login/')
 def invoice_list(request):
     invoices = Invoice.objects.all().select_related('sales_order', 'sales_order__customer')
     
@@ -330,10 +333,12 @@ def invoice_list(request):
     return render(request, 'point_of_sale/invoice_list.html', {'invoices': invoices})
 
 
+@login_required(login_url='/authentication/login/')
 def invoice_print(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
     return render(request, 'point_of_sale/invoice_print.html', {'invoice': invoice})
 
+@login_required(login_url='/authentication/login/')
 @transaction.atomic
 def process_refund(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
@@ -414,6 +419,7 @@ def process_refund(request, invoice_id):
     })
 
 
+@login_required(login_url='/authentication/login/')
 def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     
@@ -443,6 +449,7 @@ def invoice_detail(request, invoice_id):
 
 
 # Payment Views
+@login_required(login_url='/authentication/login/')
 @transaction.atomic
 def add_payment(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)

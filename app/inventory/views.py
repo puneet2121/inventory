@@ -238,7 +238,7 @@ def import_inventory(request):
     return redirect('inventory:item_list')
 
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def category_list(request):
     categories = Category.objects.all()
     context = {
@@ -247,7 +247,7 @@ def category_list(request):
     return render(request, 'inventory/page/category_list_page.html', context)
 
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def add_category(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
@@ -264,7 +264,7 @@ def add_category(request):
     })
 
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def edit_category(request, pk):
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
@@ -283,7 +283,7 @@ def edit_category(request, pk):
     })
 
 
-@login_required
+@login_required(login_url='/authentication/login/')
 def delete_category(request, pk):
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
