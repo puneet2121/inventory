@@ -28,15 +28,25 @@ def sales_order_list(request):
     """Display list of all sales orders with status and actions"""
     sales_orders = SalesOrder.objects.all().select_related('customer', 'employee').prefetch_related('items__product').order_by('-created_at')
     
-    # Add computed fields
+    # Add computed fields and rollups
+    total_value = 0
+    invoiced_count = 0
     for order in sales_orders:
         order.total_amount = sum(item.quantity * item.price for item in order.items.all())
+
         order.total_items = sum(item.quantity for item in order.items.all())
         order.has_invoice = hasattr(order, 'invoice')
         order.status_display = order.get_status_display() if hasattr(order, 'get_status_display') else 'Draft'
-    
+        total_value += float(order.total_amount or 0)
+        if order.has_invoice:
+            invoiced_count += 1
+    draft_count = sales_orders.count() - invoiced_count
+
     return render(request, 'point_of_sale/sales_order_list.html', {
-        'sales_orders': sales_orders
+        'sales_orders': sales_orders,
+        'total_value': total_value,
+        'invoiced_count': invoiced_count,
+        'draft_count': draft_count,
     })
 
 

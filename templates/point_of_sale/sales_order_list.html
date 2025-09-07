@@ -90,19 +90,19 @@
         </div>
         <div class="col-md-3">
             <div class="stats-card text-center">
-                <h4>{% with draft_count=0 %}{% for order in sales_orders %}{% if not order.has_invoice %}{% widthratio draft_count 1 1 as draft_count %}{% endif %}{% endfor %}{{ draft_count }}{% endwith %}</h4>
+                <h4>{{ draft_count }}</h4>
                 <p class="mb-0">Draft Orders</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stats-card text-center">
-                <h4>{% with invoiced_count=0 %}{% for order in sales_orders %}{% if order.has_invoice %}{% widthratio invoiced_count 1 1 as invoiced_count %}{% endif %}{% endfor %}{{ invoiced_count }}{% endwith %}</h4>
+                <h4>{{ invoiced_count }}</h4>
                 <p class="mb-0">Invoiced</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stats-card text-center">
-                <h4>₹{{ sales_orders|length|floatformat:2 }}</h4>
+                <h4>₹{{ total_value|floatformat:2 }}</h4>
                 <p class="mb-0">Total Value</p>
             </div>
         </div>
