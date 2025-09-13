@@ -98,26 +98,22 @@ def item_list_view(request):
         for item in product_list
     ) if product_list else Decimal('0.00')
 
+    low_stock_count = sum(1 for item in product_list if (item.get('stock') or 0) <= 5)
     context = {
         'products': product_list,
         'total_items': products.count(),
         'total_value': total_value,
-        'low_stock_count': products.filter(inventory__lte=5).count(),  # Changed to fixed value of 5
+        'low_stock_count': low_stock_count,
     }
-    response = render(request, 'inventory/page/item_list_page.html', context)
-    print(len(connection.queries), "queries executed")
-    for q in connection.queries:
-        print(q["sql"], q["time"])
-    return response
-    # return render(request, 'inventory/page/item_list_page.html', context)
+    return render(request, 'inventory/page/item_list_page.html', context)
 
 
 @login_required(login_url='/authentication/login/')
 def product_delete_view(request, product_id):
-    product = get_object_or_404(Inventory, pk=product_id)
+    product = get_object_or_404(Product, pk=product_id)
     product.delete()
     messages.success(request, 'Product Deleted Successfully!')
-    return redirect('inventory:product_list')
+    return redirect('inventory:item_list')
 
 
 @login_required(login_url='/authentication/login/')
@@ -157,8 +153,7 @@ def export_inventory(request):
     # Add header row
     headers = [
         "Product Name", "Category", "Cost", "Price",
-        "Price A", "Price B", "Description",
-        "Location", "Quantity",
+        "Description", "Location", "Quantity",
     ]
     ws.append(headers)
 
@@ -169,15 +164,12 @@ def export_inventory(request):
     for item in inventory_items:
         ws.append([
             item.product.name,
-            item.product.category,
+            item.product.category.name if item.product.category else "",
             item.product.cost,
             item.product.price,
-            item.product.price_A,
-            item.product.price_B,
             item.product.description,
             item.location,
             item.quantity,
-
         ])
 
     # Create response with content type for Excel
@@ -204,19 +196,24 @@ def import_inventory(request):
             for row in ws.iter_rows(min_row=2, values_only=True):  # Skip header row
                 # Extract only the required columns
                 try:
-                    name, category, price, quantity = row[:4]  # Limit to the first 4 columns
+                    name, category_name, price, quantity = row[:4]  # Limit to the first 4 columns
 
                     # Validate the data
                     if not (name and category and price and quantity):
                         continue  # Skip rows with missing essential data
 
                     # Get or create Product
+                    # Ensure category is a proper FK
+                    cat_obj = None
+                    if category_name:
+                        cat_obj, _ = Category.objects.get_or_create(name=str(category_name))
+
                     product, created = Product.objects.get_or_create(
                         name=name,
-                        defaults={"category": category, "price": price},
+                        defaults={"category": cat_obj, "price": price},
                     )
                     if not created:
-                        product.category = category
+                        product.category = cat_obj
                         product.price = price
                         product.save()
 

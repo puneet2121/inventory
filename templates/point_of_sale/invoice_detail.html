@@ -122,8 +122,13 @@
             <div class="col-md-8">
                 <div class="d-flex align-items-center mb-2">
                     <h1 class="mb-0 me-3">Invoice #{{ invoice.invoice_number }}</h1>
-                    <span class="badge-status {% if invoice.payment_status == 'paid' %}status-paid{% else %}status-unpaid{% endif %}">
-                        {% if invoice.payment_status == 'paid' %}Paid{% else %}Unpaid{% endif %}
+                    <span class="badge-status 
+                        {% if invoice.payment_status == 'paid' %}status-paid
+                        {% elif invoice.payment_status == 'partially_paid' %}status-unpaid
+                        {% else %}status-unpaid{% endif %}">
+                        {% if invoice.payment_status == 'paid' %}Paid
+                        {% elif invoice.payment_status == 'partially_paid' %}Partially Paid
+                        {% else %}Unpaid{% endif %}
                     </span>
                 </div>
                 <p class="mb-0 opacity-75">Issued on {{ invoice.date|date:"F d, Y \a\t g:i A" }}</p>
@@ -241,8 +246,8 @@
                 {% endif %}
 
                 <div class="summary-row">
-                    <span>Net Amount:</span>
-                    <span>₹{{ total_paid|floatformat:2 }} - ₹{{ total_refunded|floatformat:2 }} = ₹{{ available_for_refund|floatformat:2 }}</span>
+                    <span>Available for Refund:</span>
+                    <span>₹{{ available_for_refund|floatformat:2 }}</span>
                 </div>
 
                 <hr>

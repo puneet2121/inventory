@@ -33,7 +33,7 @@
         <h3>Bill To:</h3>
         <p>{{ invoice.sales_order.customer.name }}</p>
         <p>{{ invoice.sales_order.customer.address }}</p>
-        <p>{{ invoice.sales_order.customer.phone }}</p>
+        <p>{{ invoice.sales_order.customer.contact }}</p>
     </div>
 </div>
 
@@ -65,8 +65,8 @@
 
 <div class="totals">
     <p><strong>Subtotal:</strong> ₹{{ invoice.sales_order.cached_total|floatformat:2 }}</p>
-    <p><strong>Paid:</strong> ₹{{ invoice.net_paid|floatformat:2 }}</p>
-    <p><strong>Balance:</strong> ₹{{ invoice.balance_due|floatformat:2 }}</p>
+    <p><strong>Paid:</strong> ₹{{ invoice.cached_paid_amount|floatformat:2 }}</p>
+    <p><strong>Balance:</strong> ₹{{ bal|floatformat:2 }}</p>
 </div>
 
 </body>

@@ -10,6 +10,7 @@ from app.core.tenant_middleware import get_current_tenant
 
 ORDER_STATUS_CHOICES = [
     ('draft', 'Draft'),
+    ('in_transit', 'In Transit'),
     ('completed', 'Completed'),
     ('cancelled', 'Cancelled'),
 ]

@@ -15,10 +15,8 @@ from django.db import models
 
 from .models import SalesOrder, OrderItem, Invoice, Payment
 from .forms import SalesOrderForm, OrderItemForm, PaymentForm, RefundForm
-from django.db import transaction
-
 from ..customers.models import Customer
-from ..inventory.models import Product
+from ..inventory.models import Product, Inventory, StockMovement, StockMovementType
 from ..employee.models import EmployeeProfile
 from app.core.models import Company
 
@@ -101,9 +99,50 @@ def edit_sales_order(request, sales_order_id):
         if sales_order_form.is_valid():
             try:
                 with transaction.atomic():
-                    # First, reverse the previous inventory changes by setting status back to draft
+                    # First, reverse previous inventory deductions if the order was completed
                     if sales_order.status == 'completed':
-                        # TODO: Add inventory restoration logic here if needed
+                        # Determine how much to reverse per product based on current items
+                        to_reverse = {}
+                        for it in sales_order.items.select_related('product').all():
+                            to_reverse[it.product_id] = to_reverse.get(it.product_id, 0) + int(it.quantity)
+
+                        if to_reverse:
+                            # Walk SALE movements from latest to oldest and add back until satisfied
+                            prior_moves = (StockMovement.objects.select_for_update()
+                                           .filter(related_sales_order=sales_order,
+                                                   change_type=StockMovementType.SALE)
+                                           .order_by('-created_at', '-id'))
+                            for mv in prior_moves:
+                                remaining = to_reverse.get(mv.product_id, 0)
+                                if remaining <= 0:
+                                    continue
+                                moved = -int(mv.quantity_change)  # SALE is negative
+                                qty_to_add = min(moved, remaining)
+                                if qty_to_add <= 0:
+                                    continue
+                                inv = (Inventory.objects.select_for_update()
+                                       .filter(product=mv.product, location=mv.location)
+                                       .first())
+                                if not inv:
+                                    inv = Inventory(product=mv.product, location=mv.location, quantity=0)
+                                inv.quantity += qty_to_add
+                                inv.save()
+                                # Log compensating adjustment for audit trail
+                                StockMovement.objects.create(
+                                    product=mv.product,
+                                    location=mv.location,
+                                    change_type=StockMovementType.ADJUSTMENT,
+                                    quantity_change=qty_to_add,
+                                    related_sales_order=sales_order,
+                                    tenant_id=sales_order.tenant_id,
+                                    note=f"Reversal for editing SO {sales_order.order_number or sales_order.id}"
+                                )
+                                to_reverse[mv.product_id] = remaining - qty_to_add
+                                # Optional micro-optimization: break when all zero
+                                if all(qty <= 0 for qty in to_reverse.values()):
+                                    break
+
+                        # Mark order as draft again
                         sales_order.status = 'draft'
                         sales_order.save()
 
@@ -292,7 +331,7 @@ def add_order_items(request, sales_order_id):
             order_item = form.save(commit=False)
             order_item.sales_order = sales_order
             order_item.save()
-            return redirect('add_order_items', sales_order.id)
+            return redirect('point_of_sale:add_order_items', sales_order_id=sales_order.id)
     else:
         form = OrderItemForm()
     return render(request, 'point_of_sale/sales_order_detail.html', {'sales_order': sales_order, 'form': form})
@@ -346,7 +385,8 @@ def invoice_list(request):
 @login_required(login_url='/authentication/login/')
 def invoice_print(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
-    return render(request, 'point_of_sale/invoice_print.html', {'invoice': invoice})
+    balance_due = invoice.total_invoice_amount - invoice.cached_paid_amount
+    return render(request, 'point_of_sale/invoice_print.html', {'invoice': invoice,'bal':balance_due})
 
 @login_required(login_url='/authentication/login/')
 @transaction.atomic
@@ -375,21 +415,15 @@ def process_refund(request, invoice_id):
         return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)
 
     if request.method == 'POST':
-        print("POST data received:", request.POST)
         form = RefundForm(request.POST, invoice=invoice)
-        print("Form created with data:", form.data)
-        print("Form is bound:", form.is_bound)
         
         if form.is_valid():
-            print("Form is valid")
             try:
                 refund = form.save(commit=False)
                 refund.invoice = invoice
                 refund.type = 'refund'
                 refund.received_by = request.user
-                print("About to save refund:", refund)
                 refund.save()
-                print("Refund saved successfully")
 
                 # Update invoice payment state
                 invoice.update_cached_paid_amount()
@@ -402,23 +436,11 @@ def process_refund(request, invoice_id):
                 messages.success(request, f"Refund of ₹{refund.amount} processed successfully.")
                 return redirect('point_of_sale:invoice_detail', invoice_id=invoice.id)
             except Exception as e:
-                print("Exception occurred:", str(e))
-                import traceback
-                traceback.print_exc()
                 messages.error(request, f"Error processing refund: {str(e)}")
         else:
-            print("Form is not valid")
-            print("Form errors:", form.errors)
-            print("Form data:", request.POST)
-            for field, errors in form.errors.items():
-                print(f"Field {field} errors: {errors}")
             messages.error(request, "Invalid refund input. Please check the form and try again.")
     else:
-        print("GET request - creating new form")
         form = RefundForm(invoice=invoice)
-        print("Form fields:", list(form.fields.keys()))
-        for field_name, field in form.fields.items():
-            print(f"Field {field_name}: {field}")
 
     return render(request, 'point_of_sale/refund_form.html', {
         'invoice': invoice,

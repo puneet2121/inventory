@@ -158,13 +158,9 @@ class RefundForm(forms.ModelForm):
             
             # Set max value for amount field
             self.fields['amount'].widget.attrs['max'] = str(available_for_refund)
-            
-            print(f"Form initialized with available_for_refund: {available_for_refund}")
-            print(f"Amount field widget attrs: {self.fields['amount'].widget.attrs}")
 
     def clean_amount(self):
         amount = self.cleaned_data.get('amount')
-        print(f"Cleaning amount: {amount}, type: {type(amount)}")
         
         if amount and amount <= 0:
             raise forms.ValidationError("Refund amount must be greater than zero.")
@@ -182,9 +178,6 @@ class RefundForm(forms.ModelForm):
             
             # Available amount for refund
             available_for_refund = total_paid - total_refunded
-            
-            print(f"Total paid: {total_paid}, Total refunded: {total_refunded}, Available: {available_for_refund}")
-            
             if amount > available_for_refund:
                 raise forms.ValidationError(
                     f"Refund amount cannot exceed the available amount (₹{available_for_refund:.2f})."

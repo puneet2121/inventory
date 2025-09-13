@@ -37,4 +37,4 @@ class EmployeeAssignment(TenantAwareModel):
         unique_together = ('employee', 'date')
 
     def __str__(self):
-        return f"{self.employee.user.get_full_name()} → {self.location.name} on {self.date}"
+        return f"{self.employee.user.get_full_name()} → {self.get_location_display()} on {self.date}"

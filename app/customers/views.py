@@ -32,9 +32,6 @@ def add_customer(request):
     else:
         form = CustomerForm()
 
-    print(len(connection.queries), "queries executed")
-    for q in connection.queries:
-        print(q["sql"], q["time"])
     return render(request, 'customers/page/add_customer.html', {'form': form})
 
 
@@ -257,7 +254,6 @@ def customer_detail(request, pk):
 
 @login_required(login_url='/authentication/login/')
 def list_customers(request):
-    start = time.time()
     customers = Customer.objects.all()
     total_customers = customers.count()  # Count the total number of customers
     agg = customers.aggregate(total_debt=Sum('total_debt'))
@@ -269,46 +265,17 @@ def list_customers(request):
         'total_debt': total_debt,
     }
 
-    end = time.time()
-    print(f"Query executed in {end - start}s")
-    start = time.time()
-    response = render(request, 'customers/page/list_customers.html', context)
-    end = time.time()
-    print(f"View + template render time: {end - start}s")
-    return response
+    return render(request, 'customers/page/list_customers.html', context)
 
 
 @login_required(login_url='/authentication/login/')
 def customers_with_debt(request):
-    customers = Customer.objects.filter(debt__gt=0)
+    customers = Customer.objects.filter(total_debt__gt=0)
     return render(request, 'customers/page/customers_with_debt.html', {'customers': customers})
 
 
-@receiver(post_save, sender=Payment)
-def update_customer_snapshot_on_payment(sender, instance, **kwargs):
-    invoice = instance.invoice
-    customer = invoice.sales_order.customer
-
-    if not customer:
-        return  # Skip walk-in customers or unknown
-
-    snapshot, _ = CustomerFinancialSnapshot.objects.get_or_create(customer=customer)
-
-    # Recalculate everything
-    sales_orders = customer.sales_orders.all()
-    total_sales = sum(order.cached_total for order in sales_orders)
-
-    # payments = customer.direct_payments.all()  # Advance payments (if allowed)
-    invoice_payments = Payment.objects.filter(invoice__sales_order__customer=customer)
-
-    total_paid = sum(p.amount for p in invoice_payments if p.type == 'payment')
-    total_refunded = sum(p.amount for p in invoice_payments if p.type == 'refund')
-
-    credit_balance = customer.credit_balance if hasattr(customer, 'credit_balance') else Decimal(0)
-
-    snapshot.total_sales = total_sales
-    snapshot.total_payments = total_paid
-    snapshot.total_refunds = total_refunded
-    snapshot.total_debt = total_sales - total_paid + total_refunded
-    snapshot.credit_balance = credit_balance
-    snapshot.save()
+"""
+Note: Snapshot updates are handled via customers/signals.py using CustomerLedger.
+The redundant receiver previously defined here has been removed to prevent drift
+and model attribute mismatches.
+"""
