@@ -99,19 +99,26 @@ def edit_sales_order(request, sales_order_id):
         if sales_order_form.is_valid():
             try:
                 with transaction.atomic():
-                    # First, reverse previous inventory deductions if the order was completed
-                    if sales_order.status == 'completed':
+                    # First, reverse previous inventory deductions if needed
+                    if sales_order.status in ['completed', 'in_transit']:
                         # Determine how much to reverse per product based on current items
                         to_reverse = {}
                         for it in sales_order.items.select_related('product').all():
                             to_reverse[it.product_id] = to_reverse.get(it.product_id, 0) + int(it.quantity)
 
                         if to_reverse:
-                            # Walk SALE movements from latest to oldest and add back until satisfied
+                            # Decide which movement type to reverse.
+                            # If order is completed but has in-transit movements, reverse those (wholesale flow).
+                            change_type = StockMovementType.SALE_IN_TRANSIT if (
+                                sales_order.status == 'in_transit' or
+                                StockMovement.objects.filter(related_sales_order=sales_order,
+                                                             change_type=StockMovementType.SALE_IN_TRANSIT).exists()
+                            ) else StockMovementType.SALE
+                            # Walk movements from latest to oldest and add back until satisfied
                             prior_moves = (StockMovement.objects.select_for_update()
                                            .filter(related_sales_order=sales_order,
-                                                   change_type=StockMovementType.SALE)
-                                           .order_by('-created_at', '-id'))
+                                                   change_type=change_type)
+                                            .order_by('-created_at', '-id'))
                             for mv in prior_moves:
                                 remaining = to_reverse.get(mv.product_id, 0)
                                 if remaining <= 0:
@@ -172,12 +179,25 @@ def edit_sales_order(request, sales_order_id):
                                 messages.error(request, f"Error updating item: {str(e)}")
                                 continue
 
-                    # Finalize the updated order
+                    # Decide action based on company type and user intent
+                    tenant_id = getattr(getattr(request.user, 'employee_profile', None), 'tenant_id', None)
+                    company = Company.objects.filter(id=tenant_id).first()
+                    set_in_transit = request.POST.get('set_in_transit') in ['on', 'true', '1']
                     try:
-                        updated_sales_order.finalize_order()
-                        messages.success(request, f"Sales order {updated_sales_order.order_number} updated and inventory adjusted successfully!")
+                        if company and company.company_type == 'wholesale':
+                            if set_in_transit:
+                                updated_sales_order.mark_in_transit()
+                                messages.success(request, f"Sales order {updated_sales_order.order_number} updated and moved to In Transit.")
+                            else:
+                                # Keep as draft and only update total
+                                updated_sales_order.cached_total = updated_sales_order.total_price
+                                updated_sales_order.save()
+                                messages.success(request, f"Sales order {updated_sales_order.order_number} updated as Draft. Mark In Transit to deduct inventory.")
+                        else:
+                            updated_sales_order.finalize_order()
+                            messages.success(request, f"Sales order {updated_sales_order.order_number} updated and inventory adjusted successfully!")
                     except ValidationError as e:
-                        messages.error(request, f"Error finalizing updated order: {str(e)}")
+                        messages.error(request, f"Error updating order: {str(e)}")
                         return render(request, 'point_of_sale/edit_sales_order.html', {
                             'sales_order_form': sales_order_form,
                             'sales_order': sales_order,
@@ -270,36 +290,44 @@ def create_sales_order(request):
                                 messages.error(request, f"Error adding item: {str(e)}")
                                 continue
 
-                    # Finalize the order: update cached_total and decrease inventory
+                    # Decide action based on company type and user intent
+                    tenant_id = getattr(getattr(request.user, 'employee_profile', None), 'tenant_id', None)
+                    company = Company.objects.filter(id=tenant_id).first()
+                    set_in_transit = request.POST.get('set_in_transit') in ['on', 'true', '1']
                     try:
-                        sales_order.finalize_order()
-                        # Auto-invoice and full payment for retail companies
-                        try:
-                            tenant_id = getattr(getattr(request.user, 'employee_profile', None), 'tenant_id', None)
-                            company = Company.objects.filter(id=tenant_id).first()
-                            if company and company.company_type == 'retail' and not hasattr(sales_order, 'invoice'):
-                                invoice = Invoice.objects.create(
-                                    sales_order=sales_order,
-                                    total_invoice_amount=sales_order.cached_total,
-                                    created_by=request.user,
-                                )
-                                # Record full payment (default to cash)
-                                Payment.objects.create(
-                                    invoice=invoice,
-                                    amount=invoice.total_invoice_amount,
-                                    payment_method='cash',
-                                    received_by=request.user,
-                                )
-                                invoice.update_cached_paid_amount()
-                        except Exception as e:
-                            # Do not block order creation if auto-invoice fails; log message for now
-                            messages.warning(request, f"Order created, but auto-invoice/payment failed: {str(e)}")
-                        messages.success(request, f"Sales order {sales_order.order_number} created and inventory updated successfully!")
-                        return redirect('point_of_sale:sales_order_list')
+                        if company and company.company_type == 'wholesale':
+                            if set_in_transit:
+                                sales_order.mark_in_transit()
+                                messages.success(request, f"Sales order {sales_order.order_number} created and moved to In Transit.")
+                            else:
+                                # Save as draft with computed total
+                                sales_order.cached_total = sales_order.total_price
+                                sales_order.save()
+                                messages.success(request, f"Sales order {sales_order.order_number} created as Draft. Mark In Transit to deduct inventory.")
+                            return redirect('point_of_sale:sales_order_list')
+                        else:
+                            # Retail: finalize and auto-invoice + full payment as earlier
+                            sales_order.finalize_order()
+                            try:
+                                if not hasattr(sales_order, 'invoice'):
+                                    invoice = Invoice.objects.create(
+                                        sales_order=sales_order,
+                                        total_invoice_amount=sales_order.cached_total,
+                                        created_by=request.user,
+                                    )
+                                    Payment.objects.create(
+                                        invoice=invoice,
+                                        amount=invoice.total_invoice_amount,
+                                        payment_method='cash',
+                                        received_by=request.user,
+                                    )
+                                    invoice.update_cached_paid_amount()
+                            except Exception as e:
+                                messages.warning(request, f"Order created, but auto-invoice/payment failed: {str(e)}")
+                            messages.success(request, f"Sales order {sales_order.order_number} created and inventory updated successfully!")
+                            return redirect('point_of_sale:sales_order_list')
                     except ValidationError as e:
-                        messages.error(request, f"Error finalizing order: {str(e)}")
-                        # Delete the sales order if finalization fails
-                        sales_order.delete()
+                        messages.error(request, f"Error creating sales order: {str(e)}")
                         return render(request, 'point_of_sale/create_sales_order.html', {
                             'sales_order_form': sales_order_form,
                             'products': products_json,
@@ -342,6 +370,12 @@ def convert_to_invoice(request, sales_order_id):
     sales_order = get_object_or_404(SalesOrder, id=sales_order_id)
     if not hasattr(sales_order, 'invoice'):
         with transaction.atomic():
+            # Ensure order is finalized appropriately before invoicing
+            try:
+                sales_order.finalize_order()
+            except ValidationError as e:
+                messages.error(request, f"Cannot convert to invoice: {e}")
+                return redirect('point_of_sale:sales_order_detail', sales_order_id=sales_order.id)
             # Update customer debt when invoice is generated
             if sales_order.customer and hasattr(sales_order.customer, 'total_debt'):
                 sales_order.customer.total_debt += sales_order.cached_total

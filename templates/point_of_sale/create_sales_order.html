@@ -317,6 +317,12 @@
                     <hr>
 
                     <div class="d-grid gap-2">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="set_in_transit" name="set_in_transit">
+                            <label class="form-check-label" for="set_in_transit">
+                                Mark as In-Transit (Wholesale only)
+                            </label>
+                        </div>
                         <button type="submit" class="btn btn-success btn-lg" :disabled="items.length === 0 || !isFormValid">
                             <i class="bi bi-check-circle"></i> Create Order
                         </button>

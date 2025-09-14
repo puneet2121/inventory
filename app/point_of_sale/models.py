@@ -36,10 +36,45 @@ class SalesOrder(TenantAwareModel):
         return sum(item.total_price for item in self.items.all())
 
     def finalize_order(self):
+        """Finalize order.
+        - Retail: deduct inventory now and log SALE.
+        - Wholesale: requires in_transit first; on finalize, log SALE records with zero quantity (audit), no inventory change.
+        """
         if self.status == 'completed':
             raise ValidationError("Order is already completed.")
 
+        # Determine company type lazily to avoid circular imports
+        from app.core.models import Company
+        company = Company.objects.filter(id=self.tenant_id).first()
+        is_wholesale = bool(company and company.company_type == 'wholesale')
+
         with transaction.atomic():
+            if is_wholesale:
+                if self.status != 'in_transit':
+                    raise ValidationError("Wholesale orders must be moved to In Transit before completion.")
+
+                # Create SALE records for audit without changing stock (already deducted at in_transit)
+                transit_moves = StockMovement.objects.filter(
+                    related_sales_order=self,
+                    change_type=StockMovementType.SALE_IN_TRANSIT,
+                )
+                for mv in transit_moves:
+                    StockMovement.objects.create(
+                        product=mv.product,
+                        location=mv.location,
+                        change_type=StockMovementType.SALE,
+                        quantity_change=0,
+                        related_sales_order=self,
+                        tenant_id=self.tenant_id,
+                        note=f"Finalized from in-transit for SO {self.order_number or self.id}"
+                    )
+
+                self.cached_total = self.total_price
+                self.status = 'completed'
+                self.save()
+                return
+
+            # Retail flow: validate and deduct now
             # Validate inventory availability across ALL locations for each item
             for item in self.items.select_related('product').all():
                 total_available = (Inventory.objects
@@ -48,10 +83,8 @@ class SalesOrder(TenantAwareModel):
                 if total_available < item.quantity:
                     raise ValidationError(f"Not enough stock for {item.product.name}")
 
-            # Deduct inventory from available locations (no dependency on SalesOrder.location)
             for item in self.items.select_related('product').all():
                 qty_to_deduct = item.quantity
-                # Fetch inventories with stock for this product, order by quantity desc to reduce rows
                 inventories = list(Inventory.objects.select_for_update()
                                    .filter(product=item.product, quantity__gt=0)
                                    .order_by('-quantity'))
@@ -62,7 +95,6 @@ class SalesOrder(TenantAwareModel):
                     inv.quantity -= deduct
                     inv.save()
                     qty_to_deduct -= deduct
-                    # Log stock movement for sale (outbound) per inventory location
                     StockMovement.objects.create(
                         product=item.product,
                         location=inv.location,
@@ -73,12 +105,58 @@ class SalesOrder(TenantAwareModel):
                         note=f"SO {self.order_number or self.id} finalized"
                     )
                 if qty_to_deduct > 0:
-                    # This should not happen due to earlier validation, but keep as safety
                     raise ValidationError(f"Insufficient stock while deducting for {item.product.name}")
 
-            # Finalize order
             self.cached_total = self.total_price
             self.status = 'completed'
+            self.save()
+
+    def mark_in_transit(self):
+        """Wholesale flow: deduct inventory now and log SALE_IN_TRANSIT, set status to in_transit."""
+        if self.status not in ['draft']:
+            raise ValidationError("Only draft orders can be moved to In Transit.")
+
+        from app.core.models import Company
+        company = Company.objects.filter(id=self.tenant_id).first()
+        is_wholesale = bool(company and company.company_type == 'wholesale')
+        if not is_wholesale:
+            raise ValidationError("In Transit status is only applicable to wholesale.")
+
+        with transaction.atomic():
+            # Validate inventory availability across ALL locations for each item
+            for item in self.items.select_related('product').all():
+                total_available = (Inventory.objects
+                                   .filter(product=item.product)
+                                   .aggregate(total=models.Sum('quantity'))['total'] or 0)
+                if total_available < item.quantity:
+                    raise ValidationError(f"Not enough stock for {item.product.name}")
+
+            for item in self.items.select_related('product').all():
+                qty_to_deduct = item.quantity
+                inventories = list(Inventory.objects.select_for_update()
+                                   .filter(product=item.product, quantity__gt=0)
+                                   .order_by('-quantity'))
+                for inv in inventories:
+                    if qty_to_deduct <= 0:
+                        break
+                    deduct = min(inv.quantity, qty_to_deduct)
+                    inv.quantity -= deduct
+                    inv.save()
+                    qty_to_deduct -= deduct
+                    StockMovement.objects.create(
+                        product=item.product,
+                        location=inv.location,
+                        change_type=StockMovementType.SALE_IN_TRANSIT,
+                        quantity_change=-(deduct),
+                        related_sales_order=self,
+                        tenant_id=self.tenant_id,
+                        note=f"SO {self.order_number or self.id} moved to in-transit"
+                    )
+                if qty_to_deduct > 0:
+                    raise ValidationError(f"Insufficient stock while deducting for {item.product.name}")
+
+            self.cached_total = self.total_price
+            self.status = 'in_transit'
             self.save()
 
     def __str__(self):

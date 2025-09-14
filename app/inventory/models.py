@@ -117,6 +117,7 @@ class InventoryImage(TenantAwareModel):
 class StockMovementType(models.TextChoices):
     PURCHASE_RECEIVE = 'PURCHASE_RECEIVE', _('Purchase Receive')
     SALE = 'SALE', _('Sale')
+    SALE_IN_TRANSIT = 'SALE_IN_TRANSIT', _('Sale In Transit')
     RETURN_IN = 'RETURN_IN', _('Return In')
     RETURN_OUT = 'RETURN_OUT', _('Return Out')
     ADJUSTMENT = 'ADJUSTMENT', _('Adjustment')
