@@ -17,6 +17,8 @@ urlpatterns = [
     path('invoices/<int:invoice_id>/refund/', views.process_refund, name='process_refund'),
     path('invoices/<int:pk>/print/', views.invoice_print, name='invoice_print'),
     # Quick checkout POS flow
+    path('products/<int:product_id>/', views.product_sales_detail, name='product_sales_detail'),
+    path('reports/popular-products/', views.popular_products_report, name='popular_products_report'),
     path('quick-checkout/', views.quick_checkout, name='quick_checkout'),
 
 ]

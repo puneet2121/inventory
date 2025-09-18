@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
@@ -12,8 +13,10 @@ from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.db import transaction
 from django.db import models
+from django.utils import timezone
+from django.utils.dateparse import parse_date
 
-from .models import SalesOrder, OrderItem, Invoice, Payment
+from .models import SalesOrder, OrderItem, Invoice, Payment, ProductSalesSummary
 from .forms import SalesOrderForm, OrderItemForm, PaymentForm, RefundForm
 from ..customers.models import Customer
 from ..inventory.models import Product, Inventory, StockMovement, StockMovementType
@@ -511,6 +514,105 @@ def invoice_detail(request, invoice_id):
         'available_for_refund': available_for_refund,
         'payments': payments,
         'refunds': refunds,
+    })
+
+
+@login_required(login_url='/authentication/login/')
+def product_sales_detail(request, product_id):
+    """Display stock movements and sales history for a single product."""
+
+    product = get_object_or_404(Product.objects.select_related('category'), id=product_id)
+
+    stock_movements = (
+        product.stock_movements.select_related(
+            'related_sales_order__customer',
+            'related_sales_order__employee__user',
+        )
+        .order_by('-created_at')[:50]
+    )
+
+    sales_history = (
+        OrderItem.objects.filter(product=product)
+        .select_related(
+            'sales_order__customer',
+            'sales_order__employee__user',
+        )
+        .annotate(line_total=models.F('quantity') * models.F('price'))
+        .order_by('-sales_order__created_at')[:50]
+    )
+
+    sales_summaries = (
+        ProductSalesSummary.objects.filter(product=product)
+        .order_by('-period_start')[:12]
+    )
+
+    stock_on_hand = (
+        Inventory.objects.filter(product=product)
+        .aggregate(total=models.Sum('quantity'))['total'] or 0
+    )
+
+    return render(request, 'point_of_sale/product_detail.html', {
+        'product': product,
+        'stock_movements': stock_movements,
+        'sales_history': sales_history,
+        'sales_summaries': sales_summaries,
+        'stock_on_hand': stock_on_hand,
+    })
+
+
+@login_required(login_url='/authentication/login/')
+def popular_products_report(request):
+    """Show top selling products over a configurable date window."""
+
+    today = timezone.now().date()
+    default_start = today - timedelta(days=29)
+
+    start_date_input = request.GET.get('start')
+    end_date_input = request.GET.get('end')
+
+    start_date = parse_date(start_date_input) if start_date_input else default_start
+    end_date = parse_date(end_date_input) if end_date_input else today
+
+    if start_date is None:
+        start_date = default_start
+    if end_date is None:
+        end_date = today
+
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    summaries = ProductSalesSummary.objects.filter(
+        period_start__gte=start_date,
+        period_end__lte=end_date,
+    )
+
+    top_products = list(
+        summaries.values(
+            'product_id',
+            'product__name',
+            'product__sku',
+            'product__barcode',
+            'product__price',
+        )
+        .annotate(
+            total_quantity=Sum('total_quantity'),
+            total_revenue=Sum('total_revenue'),
+            total_orders=Sum('total_orders'),
+        )
+        .order_by('-total_quantity')[:10]
+    )
+
+    totals = summaries.aggregate(
+        aggregate_quantity=Sum('total_quantity'),
+        aggregate_revenue=Sum('total_revenue'),
+    )
+
+    return render(request, 'point_of_sale/popular_products_report.html', {
+        'top_products': top_products,
+        'start_date': start_date,
+        'end_date': end_date,
+        'aggregate_quantity': totals['aggregate_quantity'] or 0,
+        'aggregate_revenue': totals['aggregate_revenue'] or Decimal('0.00'),
     })
 
 

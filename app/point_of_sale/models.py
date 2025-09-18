@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
@@ -239,6 +241,29 @@ class OrderItem(TenantAwareModel):
 
     class Meta:
         db_table = 'order_item'
+
+
+class ProductSalesSummary(TenantAwareModel):
+    """Denormalized rollup of product sales for quick dashboard queries."""
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sales_summaries')
+    period_start = models.DateField()
+    period_end = models.DateField()
+    total_quantity = models.PositiveIntegerField(default=0)
+    total_revenue = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    total_orders = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'product_sales_summary'
+        ordering = ['-period_start', 'product_id']
+        unique_together = (('tenant_id', 'product', 'period_start', 'period_end'),)
+        indexes = [
+            models.Index(fields=['period_start', 'period_end']),
+            models.Index(fields=['-total_quantity']),
+        ]
+
+    def __str__(self):
+        return f"{self.product} [{self.period_start} - {self.period_end}]"
 
 
 class Invoice(TenantAwareModel):

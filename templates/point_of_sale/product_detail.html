@@ -1,0 +1,177 @@
+{% extends 'core/page/full_page.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} Sales{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div>
+                            <h2 class="h4 mb-1">{{ product.name }}</h2>
+                            <p class="text-muted mb-0">
+                                {% if product.category %}
+                                    {{ product.category.name }} ·
+                                {% endif %}
+                                SKU: {{ product.sku|default:'N/A' }} · Barcode: {{ product.barcode|default:'N/A' }}
+                            </p>
+                        </div>
+                        <div class="mt-3 mt-md-0 text-md-end">
+                            <p class="mb-1 fw-semibold">On Hand</p>
+                            <span class="badge bg-primary fs-5">{{ stock_on_hand }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h3 class="card-title h6 mb-0">Recent Sales Summary</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Period</th>
+                                    <th scope="col" class="text-end">Qty</th>
+                                    <th scope="col" class="text-end">Revenue</th>
+                                    <th scope="col" class="text-end">Orders</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for summary in sales_summaries %}
+                                    <tr>
+                                        <td>{{ summary.period_start|date:'d M Y' }}</td>
+                                        <td class="text-end">{{ summary.total_quantity }}</td>
+                                        <td class="text-end">₹{{ summary.total_revenue|floatformat:2 }}</td>
+                                        <td class="text-end">{{ summary.total_orders }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3">No summary data yet.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h3 class="card-title h6 mb-0">Recent Sales History</h3>
+                    <small class="text-muted">Most recent 50 order lines</small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Order #</th>
+                                    <th scope="col">Customer</th>
+                                    <th scope="col">Employee</th>
+                                    <th scope="col">Order Date</th>
+                                    <th scope="col" class="text-end">Qty</th>
+                                    <th scope="col" class="text-end">Line Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in sales_history %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'point_of_sale:sales_order_detail' item.sales_order_id %}" class="text-decoration-none">
+                                                {{ item.sales_order.order_number|default:item.sales_order_id }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if item.sales_order.customer %}
+                                                {{ item.sales_order.customer.name }}
+                                            {% else %}
+                                                <span class="text-muted">Walk-in Customer</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.sales_order.employee and item.sales_order.employee.user %}
+                                                {{ item.sales_order.employee.user.get_full_name|default:item.sales_order.employee.user.username }}
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item.sales_order.created_at|date:'d M Y, h:i A' }}</td>
+                                        <td class="text-end">{{ item.quantity }}</td>
+                                        <td class="text-end">₹{{ item.line_total|floatformat:2 }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-3">No sales recorded for this product yet.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h3 class="card-title h6 mb-0">Recent Stock Movements</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Location</th>
+                                    <th scope="col" class="text-end">Quantity</th>
+                                    <th scope="col">Order</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in stock_movements %}
+                                    <tr>
+                                        <td>{{ movement.created_at|date:'d M Y, h:i A' }}</td>
+                                        <td>{{ movement.get_change_type_display }}</td>
+                                        <td>{{ movement.location }}</td>
+                                        <td class="text-end">
+                                            {% if movement.quantity_change < 0 %}
+                                                <span class="text-danger">{{ movement.quantity_change }}</span>
+                                            {% else %}
+                                                <span class="text-success">+{{ movement.quantity_change }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if movement.related_sales_order %}
+                                                <a href="{% url 'point_of_sale:sales_order_detail' movement.related_sales_order_id %}" class="text-decoration-none">
+                                                    {{ movement.related_sales_order.order_number|default:movement.related_sales_order_id }}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">No stock movements logged yet.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
