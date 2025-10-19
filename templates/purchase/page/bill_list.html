@@ -6,12 +6,13 @@
 <div class="max-w-6xl mx-auto p-8 bg-white shadow rounded">
   <div class="flex items-center justify-between mb-6">
     <h2 class="text-2xl font-semibold">All Bills</h2>
-    <a href="{% url 'purchase:create_bill' %}" class="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600">
-      + Add Bill
-    </a>
   </div>
+            <a href="{% url 'purchase:create_bill' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                <span class="d-none d-md-inline">Add Bills</span>
+            </a>
 
-  {% if bills %}
+    {% if bills %}
     <div class="overflow-x-auto">
       <table class="min-w-full table-auto border border-gray-200 rounded">
         <thead class="bg-gray-100 text-gray-700">

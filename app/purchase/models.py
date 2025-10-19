@@ -13,7 +13,7 @@ class ExpenseCategory(models.TextChoices):
     OTHER = 'other', 'Other'
 
 
-class Bill(models.Model):
+class Bill(TenantAwareModel):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     bill_date = models.DateField()
     category = models.CharField(max_length=20, choices=ExpenseCategory.choices, default=ExpenseCategory.SUPPLIER)

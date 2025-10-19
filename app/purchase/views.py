@@ -5,6 +5,8 @@ from django.forms import modelformset_factory
 from django.db import models
 from .models import Bill, PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus, Vendor
 from app.purchase.forms import BillForm, PurchaseOrderForm, PurchaseOrderItemFormSet, VendorForm
+from ..employee.models import EmployeeProfile
+
 
 # Create your views here.
 @login_required(login_url='/authentication/login/')

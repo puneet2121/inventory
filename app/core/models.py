@@ -15,9 +15,9 @@ class TenantManager(models.Manager):
     def get_queryset(self):
         tenant_id = get_current_tenant()
         qs = super().get_queryset()
-        if tenant_id is not None:
-            qs = qs.filter(tenant_id=tenant_id)
-        return qs
+        if tenant_id is None:
+            return qs.none()  # safer default
+        return qs.filter(tenant_id=tenant_id)
 
 
 class TenantAwareModel(models.Model):

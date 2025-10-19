@@ -3,6 +3,8 @@ from django import forms
 from django.forms import inlineformset_factory
 from .models import Bill, PurchaseOrder, PurchaseOrderItem, Vendor
 from app.inventory.models import Product
+from app.core.tenant_middleware import get_current_tenant
+from app.employee.models import EmployeeProfile
 
 
 class BillForm(forms.ModelForm):
@@ -12,6 +14,12 @@ class BillForm(forms.ModelForm):
         widgets = {
             'bill_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        tenant_id = get_current_tenant()
+        if tenant_id is not None and 'paid_to' in self.fields:
+            self.fields['paid_to'].queryset = EmployeeProfile.objects.filter(tenant_id=tenant_id).order_by('user__username')
 
 
 class PurchaseOrderForm(forms.ModelForm):
