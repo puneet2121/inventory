@@ -22,13 +22,14 @@ WSGI_APPLICATION = 'system.development.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'defaultdb',
-        'USER':  os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': '25060',
+        'NAME': 'postgres',
+        'USER':  'postgres.ptxtlwgjjuvuocnwbfqs',
+        'PASSWORD': 'GPUcZADQYdzeZkmD',
+        'HOST': 'aws-1-ca-central-1.pooler.supabase.com',
+        'PORT': '6543',
     }
 }
+
 
 
 

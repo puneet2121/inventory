@@ -15,12 +15,5 @@
       <jdbc-url>jdbc:postgresql://159.89.162.82:5432/mydatabase</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="defaultdb@db-postgresql-blr1-67112-do-user-23653135-0.g.db.ondigitalocean.com" uuid="d8030ea2-7e53-4851-a5d5-638461566cb8">
-      <driver-ref>postgresql</driver-ref>
-      <synchronize>true</synchronize>
-      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://db-postgresql-blr1-67112-do-user-23653135-0.g.db.ondigitalocean.com:25060/defaultdb</jdbc-url>
-      <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>
   </component>
 </project>
