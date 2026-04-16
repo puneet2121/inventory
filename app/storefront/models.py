@@ -110,7 +110,9 @@ class StorefrontProductImage(models.Model):
         on_delete=models.CASCADE,
         related_name='images'
     )
-    image = models.ImageField(upload_to=product_image_upload_to)
+    # Support both uploaded images and external URLs (inventory sync).
+    image = models.ImageField(upload_to=product_image_upload_to, blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True)
     alt_text = models.CharField(max_length=160, blank=True)
     display_order = models.PositiveIntegerField(default=0)
     is_primary = models.BooleanField(default=False)
@@ -126,6 +128,15 @@ class StorefrontProductImage(models.Model):
 
     def __str__(self):
         return f"{self.product.product.name} image #{self.display_order}"
+
+    @property
+    def resolved_url(self):
+        """
+        Template-friendly URL for the image, preferring uploaded media over external URLs.
+        """
+        if self.image and getattr(self.image, "url", None):
+            return self.image.url
+        return self.image_url
 
 
 class StorefrontVariant(models.Model):
