@@ -1,0 +1,124 @@
+{% extends 'core/base/base.html' %}
+{% load static %}
+
+{% block base_content %}
+<header class="storefront-header mb-4">
+    <div class="bg-dark text-white py-1 small">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>Authentic mobile accessories • Pan-India fulfilment • 7-day device testing offer</span>
+            <div class="d-flex gap-3">
+                <span><i class="bi bi-telephone-fill me-1"></i> +91 99999 00000</span>
+                <span><i class="bi bi-clock-history me-1"></i> Mon-Sat · 10AM-7PM</span>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="{% url 'storefront:product_list' %}">Bizly Store</a>
+
+            <form class="d-none d-lg-flex ms-4 flex-grow-1" method="get" action="{% url 'storefront:product_list' %}">
+                <input class="form-control form-control-lg rounded-pill px-4" type="search" name="q" placeholder="Search cases, cables, chargers..." value="{{ request.GET.q }}">
+            </form>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#storefrontPrimaryNav" aria-controls="storefrontPrimaryNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="storefrontPrimaryNav">
+                <form class="d-lg-none my-3" method="get" action="{% url 'storefront:product_list' %}">
+                    <input class="form-control" type="search" name="q" placeholder="Search accessories..." value="{{ request.GET.q }}">
+                </form>
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="{% url 'storefront:product_list' %}?trending=1">Trending</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Quick picks
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% for trending in storefront_trending_links %}
+                                <li><a class="dropdown-item" href="{% url 'storefront:product_detail' trending.slug %}">{{ trending.name }}</a></li>
+                            {% empty %}
+                                <li><span class="dropdown-item-text text-muted small">Mark products as trending to see them here</span></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="mailto:sales@bizly.store">
+                            <i class="bi bi-chat-dots me-1"></i>Talk to sales
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-2" href="{% url 'storefront:checkout' %}">
+                            <i class="bi bi-cart3"></i>
+                            Checkout
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary rounded-pill px-4" href="{% url 'storefront:product_list' %}?q=bulk">Bulk Orders</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="bg-light border-bottom">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center gap-3 py-2">
+                <div class="dropdown position-static">
+                    <button class="btn btn-link text-decoration-none fw-semibold d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-grid-fill"></i>
+                        Shop by Category
+                        <i class="bi bi-chevron-down small"></i>
+                    </button>
+                    <div class="dropdown-menu w-100 p-4 border-0 shadow-lg mt-0">
+                        {% if storefront_category_tree %}
+                            <div class="row g-4">
+                                {% for category in storefront_category_tree %}
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <div class="mb-2 d-flex justify-content-between align-items-center">
+                                            <h6 class="text-uppercase small fw-semibold mb-0">{{ category.name }}</h6>
+                                            <a class="text-decoration-none small" href="{% url 'storefront:product_list' %}?category={{ category.filter_value }}">View all</a>
+                                        </div>
+                                        <ul class="list-unstyled small mb-0">
+                                            {% for sub in category.subcategories|slice:':6' %}
+                                                <li class="mb-1">
+                                                    <a class="text-reset text-decoration-none d-flex justify-content-between align-items-center" href="{% url 'storefront:product_detail' sub.slug %}">
+                                                        <span>{{ sub.label }}</span>
+                                                        <span class="text-muted">₹{{ sub.price }}</span>
+                                                    </a>
+                                                </li>
+                                            {% empty %}
+                                                <li class="text-muted">Publish products to populate this menu.</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted small">No published storefront inventory yet. Publish items to build this menu.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="fw-semibold text-muted small">Hot right now:</span>
+                    {% for trending in storefront_trending_links %}
+                        <a class="badge rounded-pill text-bg-white border" href="{% url 'storefront:product_detail' trending.slug %}">
+                            {{ trending.name }}
+                        </a>
+                    {% empty %}
+                        <span class="text-muted small">Set products as trending in the admin to surface them here.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main>
+    {% block storefront_content %}{% endblock %}
+</main>
+{% endblock %}

@@ -104,11 +104,13 @@ class AuditLog(TenantAwareModel):
 
 class InventoryImage(TenantAwareModel):
     inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
-    image = models.FileField()
+    image = models.FileField(blank=True, null=True)
     image_url = models.URLField()
 
     def __str__(self):
-        return self.image.url
+        if self.image:
+            return self.image.url
+        return self.image_url or f"Inventory image {self.pk}"
 
     class Meta:
         db_table = 'inventory_image'

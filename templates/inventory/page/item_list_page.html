@@ -95,9 +95,12 @@
         {% for product in products %}
         <div class="item-card">
             <div class="item-image">
-                <img src="{{ product.image.url|default:'static/images/placeholder.png' }}"
-                     alt="{{ product.name }}">
-                {% if product.stock <= 5 %}  <!-- Changed condition -->
+                {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                {% else %}
+                    <img src="{% static 'images/placeholder.png' %}" alt="No image available">
+                {% endif %}
+                {% if product.stock|default:0 <= 5 %}
                 <div class="stock-warning">Low Stock</div>
                 {% endif %}
             </div>
@@ -145,8 +148,11 @@
                 <tr>
                     <td>
                         <div class="d-flex align-items-center">
-                            <img src="{{ product.image.url|default:'static/images/placeholder.png' }}"
-                                 class="item-thumbnail">
+                            {% if product.image_url %}
+                                <img src="{{ product.image_url }}" class="item-thumbnail" alt="{{ product.name }}">
+                            {% else %}
+                                <img src="{% static 'images/placeholder.png' %}" class="item-thumbnail" alt="No image">
+                            {% endif %}
                             <div class="ms-2">
                                 <div class="item-name">{{ product.name }}</div>
                                 <div class="item-sku">SKU: {{ product.sku }}</div>
@@ -156,7 +162,7 @@
                     <td>{{ product.category }}</td>
                     <td>₹{{ product.price|floatformat:2 }}</td>
                     <td>
-                        <span class="stock-badge {% if product.stock <= 5 %}low{% endif %}">  <!-- Changed condition -->
+                        <span class="stock-badge {% if product.stock|default:0 <= 5 %}low{% endif %}">
                             {{ product.stock }}
                         </span>
                     </td>
@@ -195,7 +201,7 @@
 
 <!-- Modals -->
 {% include 'inventory/components/filter_modal.html' %}
-{#{% include 'inventory/components/import_modal.html' %}#}
+{% include 'inventory/components/import_modal.html' %}
 {% include 'inventory/components/item_details_modal.html' %}
 {% endblock %}
 

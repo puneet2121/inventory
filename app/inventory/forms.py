@@ -106,6 +106,24 @@ class InventoryImageForm(forms.ModelForm):
         fields = ['image', ]
 
 
+class InventoryImageUploadForm(forms.Form):
+    images = MultipleFileField(required=False, label="Upload photos")
+    image_urls = forms.CharField(
+        required=False,
+        label="Existing S3 URLs or keys",
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'https://bucket.s3.region.amazonaws.com/folder/img-1.jpg\nsecond-image.jpg'
+        }),
+        help_text="One per line. Relative keys are prefixed with your PUBLIC_MEDIA_BASE_URL."
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+
+
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
@@ -121,3 +139,65 @@ class CategoryForm(forms.ModelForm):
                 'placeholder': 'Enter category description'
             }),
         }
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class importInventoryForm(forms.Form):
+    """
+    Form for uploading CSV(s) to import inventory in bulk.
+
+    - file: Accepts one or more CSV files. Use request.FILES.getlist('file') in the view.
+    - update_existing: If True, existing products (matched by SKU) will be updated; otherwise skipped or duplicated based on view logic.
+    """
+    file = forms.FileField(
+        label="CSV file",
+        help_text="Upload a CSV file with headers: name, sku, category, price, stock. You can select multiple files.",
+        widget=MultipleFileInput(attrs={
+            "accept": ".csv,text/csv",
+            "multiple": True,
+            "class": "form-control",
+        })
+    )
+    update_existing = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Update existing products",
+        help_text="When checked, rows with an SKU matching an existing product will update that product."
+    )
+
+    def clean_file(self):
+        """
+        Basic validation: ensure at least one file and that each file looks like a CSV.
+        Deeper validation (headers, encoding) should be done in the view where files are read.
+        """
+        uploaded = self.files.getlist('file') if hasattr(self, 'files') else None
+        if not uploaded:
+            # Fall back to single file upload retrieval
+            uploaded_single = self.cleaned_data.get('file')
+            if uploaded_single:
+                return [uploaded_single]
+            raise forms.ValidationError("No file uploaded.")
+        # Basic checks
+        cleaned_files = []
+        for f in uploaded:
+            # Check content type heuristically; browser may not always set it
+            ct = getattr(f, 'content_type', '') or ''
+            if ct and 'csv' not in ct and 'text' not in ct:
+                # allow through but warn via validation error
+                raise forms.ValidationError(f"Uploaded file {f.name} does not look like a CSV.")
+            if f.size == 0:
+                raise forms.ValidationError(f"Uploaded file {f.name} is empty.")
+            cleaned_files.append(f)
+        return cleaned_files
+
+    def __init__(self, *args, **kwargs):
+        """
+        Configure crispy forms helper so the form renders nicely if used in templates.
+        """
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.attrs = {'enctype': 'multipart/form-data'}
+        self.helper.add_input(Submit('submit', 'Upload', css_class='btn-primary'))

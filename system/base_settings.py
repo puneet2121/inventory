@@ -52,12 +52,15 @@ INSTALLED_APPS = [
     'app.dashboard.apps.DashboardConfig',
     'app.customers.apps.CustomersConfig',
     'app.management.apps.ManagementConfig',
+    'app.storefront.apps.StorefrontConfig',
 ]
-INSTALLED_APPS += [
+extra_apps = [
     'crispy_forms',
     'crispy_bootstrap5',
-    # 'storages',
 ]
+if os.getenv('AWS_STORAGE_BUCKET_NAME'):
+    extra_apps.append('storages')
+INSTALLED_APPS += extra_apps
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -82,6 +85,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'app.storefront.context_processors.storefront_navigation',
             ],
         },
     },
@@ -121,27 +125,45 @@ STATIC_URL = os.getenv('DJANGO_STATIC_URL', '/static/')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Your source static files (dev)
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')    # Collected static files (production)
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = os.getenv('DJANGO_MEDIA_URL', '/media/')
+MEDIA_LOCATION = os.getenv('AWS_MEDIA_LOCATION', 'media')
+
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+if AWS_STORAGE_BUCKET_NAME:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
+    AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
+    AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4")
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = os.getenv('AWS_DEFAULT_ACL', 'public-read')
+    AWS_S3_CUSTOM_DOMAIN = os.getenv(
+        "AWS_S3_CUSTOM_DOMAIN",
+        f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com" if AWS_S3_REGION_NAME else None,
+    )
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/"
+    DEFAULT_FILE_STORAGE = 'app.core.storage_backends.MediaStorage'
+
+PUBLIC_MEDIA_BASE_URL = os.getenv('PUBLIC_MEDIA_BASE_URL')
+if not PUBLIC_MEDIA_BASE_URL and MEDIA_URL.startswith('http'):
+    PUBLIC_MEDIA_BASE_URL = MEDIA_URL.rstrip('/')
+
+S3_UPLOAD_BUCKET = os.getenv('S3_UPLOAD_BUCKET', AWS_STORAGE_BUCKET_NAME)
+S3_UPLOAD_REGION = os.getenv('S3_UPLOAD_REGION', AWS_S3_REGION_NAME if AWS_STORAGE_BUCKET_NAME else None)
+S3_UPLOAD_ENDPOINT = os.getenv('S3_UPLOAD_ENDPOINT', AWS_S3_ENDPOINT_URL if AWS_STORAGE_BUCKET_NAME else None)
+S3_UPLOAD_PREFIX = os.getenv('S3_UPLOAD_PREFIX', MEDIA_LOCATION if AWS_STORAGE_BUCKET_NAME else 'media')
+S3_UPLOAD_ACCESS_KEY = os.getenv('S3_UPLOAD_ACCESS_KEY', AWS_ACCESS_KEY_ID if AWS_STORAGE_BUCKET_NAME else None)
+S3_UPLOAD_SECRET_KEY = os.getenv('S3_UPLOAD_SECRET_KEY', AWS_SECRET_ACCESS_KEY if AWS_STORAGE_BUCKET_NAME else None)
+S3_UPLOAD_USE_ANONYMOUS = os.getenv('S3_UPLOAD_USE_ANONYMOUS', 'false').lower() == 'true'
+S3_UPLOAD_PUBLIC_BASE_URL = os.getenv('S3_UPLOAD_PUBLIC_BASE_URL', PUBLIC_MEDIA_BASE_URL)
+
 # STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
-# AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-# AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCE SS_KEY")
-# AWS_STORAGE_BUCKET_NAME = "century-auto"
-# AWS_S3_REGION_NAME = "us-east-1"
-# AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
-#
-# AWS_S3_OBJECT_PARAMETERS = {
-#     'CacheControl': 'max-age=86400',
-# }
-#
-# AWS_LOCATION = 'https://century-auto.nyc3.digitaloceanspaces.com'
-#
-# AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.nyc3.digitaloceanspaces.com'
-# AWS_DEFAULT_ACL = 'public-read'
-# MEDIA_LOCATION = 'media'
-# MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/'
-
-# DEFAULT_FILE_STORAGE = 'app.core.storage_backends.MediaStorage'
 
 #
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

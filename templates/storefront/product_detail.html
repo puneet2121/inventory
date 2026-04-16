@@ -1,0 +1,358 @@
+{% extends 'storefront/base_storefront.html' %}
+{% load static %}
+
+{% block title %}{{ product.product.name }}{% endblock %}
+
+{% block storefront_content %}
+<div class="container py-4">
+    <a href="{% url 'storefront:product_list' %}" class="text-decoration-none">&larr; Back to Store</a>
+    <div class="row mt-3 g-4">
+        <div class="col-md-6">
+            <div class="mb-3">
+                {% for image in product.images.all %}
+                    {% if image.resolved_url %}
+                        <img src="{{ image.resolved_url }}" class="img-fluid rounded mb-2" alt="{{ image.alt_text|default:product.product.name }}">
+                    {% endif %}
+                {% empty %}
+                    <img src="{% static 'images/placeholder.png' %}" class="img-fluid rounded" alt="{{ product.product.name }}">
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            {% if product.is_trending %}
+                <span class="badge bg-warning text-dark mb-2">Trending</span>
+            {% endif %}
+            <h1 class="h3">{{ product.product.name }}</h1>
+            <p class="text-muted mb-1">{{ product.short_tagline }}</p>
+            <p class="small text-muted">SKU: {{ product.product.sku|default:"N/A" }}</p>
+            <div class="mb-3">
+                <span class="fw-bold fs-3">₹{{ product.active_price }}</span>
+                {% if product.seven_day_test_price and product.active_price != product.list_price %}
+                    <span class="text-muted text-decoration-line-through fs-5">₹{{ product.list_price }}</span>
+                    {% if product.test_price_expires_at %}
+                        <div class="small text-danger">
+                            7-day test price valid until {{ product.test_price_expires_at|date:"M d, Y H:i" }}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="mb-4">
+                <h6 class="text-uppercase text-muted small">Description</h6>
+                <p class="mb-0">{{ product.product.description|default:"No description provided yet." }}</p>
+            </div>
+
+            {% if product.compatibility.all %}
+                <div class="mb-3">
+                    <h6>Compatibility</h6>
+                    {% for tag in product.compatibility.all %}
+                        <span class="badge bg-light text-dark border">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form class="mt-4" id="addToCartForm">
+                {% if product.variants.all %}
+                    <div class="mb-3">
+                        <label for="variantSelect" class="form-label">Choose a variant</label>
+                        <select id="variantSelect" class="form-select" required>
+                            <option value="" disabled selected>Select an option</option>
+                            {% for variant in product.variants.all %}
+                                <option
+                                    value="{{ variant.id }}"
+                                    data-option-name="{{ variant.option_name }}"
+                                    data-option-value="{{ variant.option_value }}"
+                                    data-sku="{{ variant.sku|default:product.product.sku }}"
+                                    data-additional-price="{{ variant.additional_price }}"
+                                >
+                                    {{ variant.option_name }}: {{ variant.option_value }} {% if variant.additional_price %}(+₹{{ variant.additional_price }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+                <div class="row g-2">
+                    <div class="col-5 col-sm-4">
+                        <label for="cartQuantity" class="form-label small">Quantity</label>
+                        <input type="number" min="1" value="1" class="form-control" id="cartQuantity">
+                    </div>
+                    <div class="col-7 col-sm-8 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-lg w-100" id="addToCartBtn">
+                            <i class="bi bi-cart-plus me-2"></i>Add to cart
+                        </button>
+                    </div>
+                </div>
+                <div class="alert alert-success small d-none mt-3" role="alert" id="cartFeedback">
+                    Added to cart! Open the cart drawer to continue checkout (coming soon).
+                </div>
+            </form>
+            <p class="text-muted small mt-3 mb-0">
+                Cart data is stored in your browser for now. Head over to the
+                <a href="{% url 'storefront:checkout' %}">checkout page</a> when you're ready.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mt-5 g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Product details</h5>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Title</dt>
+                        <dd class="col-sm-8">{{ product.product.name }}</dd>
+                        <dt class="col-sm-4">SKU</dt>
+                        <dd class="col-sm-8">{{ product.product.sku|default:"N/A" }}</dd>
+                        <dt class="col-sm-4">Category</dt>
+                        <dd class="col-sm-8">{{ product.product.category.name|default:"Uncategorized" }}</dd>
+                        <dt class="col-sm-4">Tagline</dt>
+                        <dd class="col-sm-8">{{ product.short_tagline|default:"—" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Write a review</h5>
+                    <form id="reviewForm" class="small">
+                        <div class="mb-2">
+                            <label for="reviewerName" class="form-label">Your name</label>
+                            <input type="text" class="form-control" id="reviewerName" placeholder="Jane D." required>
+                        </div>
+                        <div class="mb-2">
+                            <label for="reviewRating" class="form-label">Rating</label>
+                            <select id="reviewRating" class="form-select" required>
+                                <option value="" disabled selected>Choose…</option>
+                                {% for star in "54321" %}
+                                    <option value="{{ star }}">{{ star }} star{% if star != '1' %}s{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewText" class="form-label">Your feedback</label>
+                            <textarea id="reviewText" class="form-control" rows="3" placeholder="Tell shoppers what stood out to you" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary w-100" id="submitReviewBtn">
+                            <i class="bi bi-chat-right-text me-2"></i>Submit review
+                        </button>
+                    </form>
+                    <div class="alert alert-info small d-none mt-3" id="reviewFeedback"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Recent reviews</h5>
+                    <div id="reviewList" class="small">
+                        <p class="text-muted mb-0">No reviews yet. Be the first to leave a note!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js_include_bottom %}
+    {{ block.super }}
+    <script>
+        (function () {
+            const productSlug = '{{ product.slug }}';
+            const productName = '{{ product.product.name|escapejs }}';
+            const baseSku = '{{ product.product.sku|default:""|escapejs }}';
+            const basePrice = parseFloat('{{ product.active_price }}');
+            const cartKey = 'storefront_cart';
+            const reviewEndpoint = '{% url "storefront:product_reviews_api" product.slug %}';
+            const maxReviewItems = 5;
+            const qtyInput = document.getElementById('cartQuantity');
+            const form = document.getElementById('addToCartForm');
+            const feedback = document.getElementById('cartFeedback');
+            const variantSelect = document.getElementById('variantSelect');
+
+            function getCart() {
+                try {
+                    return JSON.parse(localStorage.getItem(cartKey)) || [];
+                } catch (err) {
+                    console.warn('Unable to parse cart payload', err);
+                    return [];
+                }
+            }
+
+            function saveCart(items) {
+                localStorage.setItem(cartKey, JSON.stringify(items));
+            }
+
+            function buildCartItem(quantity) {
+                const safeQty = Math.max(1, Number(quantity) || 1);
+                const item = {
+                    slug: productSlug,
+                    name: productName,
+                    sku: baseSku,
+                    quantity: safeQty,
+                    price: basePrice,
+                    variant: null,
+                };
+
+                if (variantSelect) {
+                    const selected = variantSelect.options[variantSelect.selectedIndex];
+                    if (!selected || !selected.value) {
+                        return null;
+                    }
+                    item.variant = {
+                        id: selected.value,
+                        option_name: selected.dataset.optionName,
+                        option_value: selected.dataset.optionValue,
+                    };
+                    if (selected.dataset.sku) {
+                        item.sku = selected.dataset.sku;
+                    }
+                    if (selected.dataset.additionalPrice) {
+                        item.price = basePrice + parseFloat(selected.dataset.additionalPrice);
+                    }
+                }
+
+                return item;
+            }
+
+            if (form) {
+                form.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const cartItem = buildCartItem(qtyInput.value);
+                    if (!cartItem) {
+                        variantSelect?.classList.add('is-invalid');
+                        return;
+                    }
+                    variantSelect?.classList.remove('is-invalid');
+
+                    const cart = getCart();
+                    const key = `${cartItem.slug}-${cartItem.variant?.id || 'base'}`;
+                    const existing = cart.find((item) => item.key === key);
+                    if (existing) {
+                        existing.quantity += cartItem.quantity;
+                    } else {
+                        cart.push({ ...cartItem, key });
+                    }
+                    saveCart(cart);
+
+                    feedback.classList.remove('d-none');
+                    feedback.textContent = `${cartItem.quantity} unit${cartItem.quantity > 1 ? 's' : ''} added to cart.`;
+                    setTimeout(() => feedback.classList.add('d-none'), 4000);
+                });
+            }
+
+            const reviewForm = document.getElementById('reviewForm');
+            const reviewList = document.getElementById('reviewList');
+            const reviewFeedback = document.getElementById('reviewFeedback');
+            let latestReviews = [];
+
+            function starIcons(count) {
+                return '★'.repeat(count) + '☆'.repeat(5 - count);
+            }
+
+            function renderReviews(reviews) {
+                if (!reviewList) {
+                    return;
+                }
+                if (!reviews || !reviews.length) {
+                    reviewList.innerHTML = '<p class="text-muted mb-0">No reviews yet. Be the first to leave a note!</p>';
+                    return;
+                }
+                reviewList.innerHTML = reviews
+                    .map((review) => `
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>${review.name}</strong>
+                                <span class="text-warning fw-semibold">${starIcons(review.rating)}</span>
+                            </div>
+                            <p class="mb-1">${review.body}</p>
+                            <small class="text-muted">${review.created_at}</small>
+                        </div>
+                    `)
+                    .join('');
+            }
+
+            function getCsrfToken() {
+                const match = document.cookie.match(/csrftoken=([^;]+)/);
+                return match ? decodeURIComponent(match[1]) : '';
+            }
+
+            async function fetchReviews() {
+                if (!reviewList) {
+                    return;
+                }
+                try {
+                    const response = await fetch(`${reviewEndpoint}?limit=${maxReviewItems}`);
+                    if (!response.ok) {
+                        throw new Error('Unable to load reviews right now.');
+                    }
+                    const data = await response.json();
+                    latestReviews = data.reviews || [];
+                    renderReviews(latestReviews);
+                } catch (error) {
+                    reviewList.innerHTML = `<p class="text-danger mb-0">${error.message}</p>`;
+                }
+            }
+
+            async function submitReview(payload) {
+                const response = await fetch(reviewEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const message = errorData.errors ? Object.values(errorData.errors).flat().join(' ') : 'Something went wrong.';
+                    throw new Error(message);
+                }
+
+                const data = await response.json();
+                latestReviews = [data.review, ...latestReviews].slice(0, maxReviewItems);
+                renderReviews(latestReviews);
+            }
+
+            if (reviewForm) {
+                reviewForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const payload = {
+                        reviewer_name: document.getElementById('reviewerName').value.trim(),
+                        rating: parseInt(document.getElementById('reviewRating').value, 10),
+                        body: document.getElementById('reviewText').value.trim(),
+                    };
+
+                    if (!payload.reviewer_name || !payload.rating || !payload.body) {
+                        reviewFeedback.classList.remove('d-none');
+                        reviewFeedback.classList.remove('alert-success', 'alert-danger', 'alert-info');
+                        reviewFeedback.classList.add('alert-warning');
+                        reviewFeedback.textContent = 'Please complete all review fields.';
+                        return;
+                    }
+
+                    reviewFeedback.classList.add('d-none');
+                    reviewFeedback.classList.remove('alert-success', 'alert-warning', 'alert-danger', 'alert-info');
+
+                    try {
+                        await submitReview(payload);
+                        reviewFeedback.classList.remove('d-none');
+                        reviewFeedback.classList.add('alert-success');
+                        reviewFeedback.textContent = 'Thanks for sharing your review!';
+                        reviewForm.reset();
+                    } catch (error) {
+                        reviewFeedback.classList.remove('d-none');
+                        reviewFeedback.classList.add('alert-danger');
+                        reviewFeedback.textContent = error.message;
+                    }
+                });
+
+                fetchReviews();
+            }
+        })();
+    </script>
+{% endblock %}

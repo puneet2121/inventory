@@ -9,6 +9,42 @@ def get_current_tenant():
     return getattr(_thread_locals, 'tenant_id', None)
 
 
+def set_current_tenant(tenant_id):
+    """
+    Sets the tenant_id for the current request thread.
+    Useful for public flows (e.g., QR links) where the user is not authenticated
+    but the tenant is known from a signed token.
+    """
+    _thread_locals.tenant_id = tenant_id
+
+
+def set_current_tenant(tenant_id):
+    """
+    Sets the tenant_id for the current request thread.
+    Useful for public flows (e.g., QR links) where the user is not authenticated
+    but the tenant is known from a signed token.
+    """
+    _thread_locals.tenant_id = tenant_id
+
+
+def set_current_tenant(tenant_id):
+    """
+    Sets the tenant_id for the current request thread.
+    Useful for public flows (e.g., QR links) where the user is not authenticated
+    but the tenant is known from a signed token.
+    """
+    _thread_locals.tenant_id = tenant_id
+
+
+def set_current_tenant(tenant_id):
+    """
+    Sets the tenant_id for the current request thread.
+    Useful for public flows (e.g., QR links) where the user is not authenticated
+    but the tenant is known from a signed token.
+    """
+    _thread_locals.tenant_id = tenant_id
+
+
 class TenantMiddleware:
     """
     Middleware to set tenant_id for each request.

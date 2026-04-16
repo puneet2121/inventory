@@ -51,4 +51,5 @@ urlpatterns = [
     path('employee/', include('app.employee.urls')),
     path('purchase/', include('app.purchase.urls')),
     path('reports/', include('app.reports.urls')),
+    path('shop/', include(('app.storefront.urls', 'storefront'), namespace='storefront')),
 ]

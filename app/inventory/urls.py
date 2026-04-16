@@ -15,6 +15,7 @@ urlpatterns = [
     path('upload/<int:product_id>/', views.upload_images, name='upload_images'),
     path('export_inventory/', views.export_inventory, name='export_inventory'),
     path('import_inventory/', views.import_inventory, name='import_inventory'),
+    path('download_template/', views.download_template, name='download_template'),
     path('categories/', views.category_list, name='category_list'),
     path('categories/add/', views.add_category, name='add_category'),
     path('categories/<int:pk>/edit/', views.edit_category, name='edit_category'),

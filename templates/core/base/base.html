@@ -54,6 +54,8 @@
         </div>
     {% endfor %}
 {% endif %}
+{# Ensure CSRF token is available for fetch/AJAX requests #}
+{% csrf_token %}
 <div class="container-fluid">
     {% block base_content %}
     {% endblock %}

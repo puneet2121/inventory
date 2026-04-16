@@ -50,6 +50,11 @@
                 {% crispy inventory_form %}
             </div>
 
+            <div class="inventory-section">
+                <h5 class="section-title">Images</h5>
+                {% crispy image_form %}
+            </div>
+
             <!-- Form Actions -->
             <div class="form-actions">
                 <a href="{% url 'inventory:item_list' %}" class="btn btn-light">

@@ -11,7 +11,7 @@
                     <ol class="small">
                         <li>Download the template file if needed</li>
                         <li>Fill in your inventory data</li>
-                        <li>Upload the completed file</li>
+                        <li>Upload the completed file (optional <strong>Image URLs</strong> column supports pipe-separated S3 keys/links)</li>
                     </ol>
                 </div>
 
@@ -21,16 +21,24 @@
                     </a>
                 </div>
 
-                <div class="upload-zone">
-                    <input type="file"
-                           class="form-control"
-                           accept=".xlsx,.xls,.csv"
-                           @change="handleImport">
-                    <small class="text-muted">Supported formats: .xlsx, .xls, .csv</small>
-                </div>
+                <form id="importInventoryForm"
+                      method="post"
+                      action="{% url 'inventory:import_inventory' %}"
+                      enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="upload-zone">
+                        <input type="file"
+                               class="form-control"
+                               name="file"
+                               accept=".xlsx,.csv"
+                               required>
+                        <small class="text-muted">Supported formats: .xlsx, .csv</small>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" form="importInventoryForm">Upload</button>
             </div>
         </div>
     </div>

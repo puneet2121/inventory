@@ -27,13 +27,32 @@ class PurchaseOrderForm(forms.ModelForm):
         model = PurchaseOrder
         fields = ['vendor', 'location', 'note']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        tenant_id = get_current_tenant()
+        vendor_field = self.fields.get('vendor')
+        if vendor_field is None:
+            return
+        if tenant_id is not None:
+            vendor_field.queryset = Vendor.objects.filter(tenant_id=tenant_id).order_by('name')
+        else:
+            vendor_field.queryset = Vendor.objects.none()
+
 
 class PurchaseOrderItemForm(forms.ModelForm):
-    product = forms.ModelChoiceField(queryset=Product.objects.all())
+    product = forms.ModelChoiceField(queryset=Product.objects.none())
 
     class Meta:
         model = PurchaseOrderItem
         fields = ['product', 'quantity', 'unit_price']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        tenant_id = get_current_tenant()
+        if tenant_id is not None:
+            self.fields['product'].queryset = Product.objects.filter(tenant_id=tenant_id).order_by('name')
+        else:
+            self.fields['product'].queryset = Product.objects.none()
 
 
 PurchaseOrderItemFormSet = inlineformset_factory(

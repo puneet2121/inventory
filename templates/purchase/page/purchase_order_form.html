@@ -12,6 +12,11 @@
   </div>
 
   {{ formset.management_form }}
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger">
+      {{ formset.non_form_errors }}
+    </div>
+  {% endif %}
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <span>Line Items</span>
@@ -24,10 +29,27 @@
           <tbody id="formset-body">
             {% for f in formset.forms %}
               <tr class="form-row">
-                <td>{{ f.product }}</td>
-                <td>{{ f.quantity }}</td>
-                <td>{{ f.unit_price }}</td>
-                <td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+                <td>
+                  {{ f.id }}
+                  {{ f.product.errors }}
+                  {{ f.product }}
+                </td>
+                <td>
+                  {{ f.quantity.errors }}
+                  {{ f.quantity }}
+                </td>
+                <td>
+                  {{ f.unit_price.errors }}
+                  {{ f.unit_price }}
+                </td>
+                <td class="text-center">
+                  <span class="d-none">
+                    {{ f.DELETE }}
+                  </span>
+                  <button type="button" class="btn btn-outline-danger btn-sm" data-action="remove-row">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -41,11 +63,72 @@
   </div>
 </form>
 
+<template id="empty-form-template">
+  <tr class="form-row">
+    <td>
+      {{ formset.empty_form.id }}
+      {{ formset.empty_form.product.errors }}
+      {{ formset.empty_form.product }}
+    </td>
+    <td>
+      {{ formset.empty_form.quantity.errors }}
+      {{ formset.empty_form.quantity }}
+    </td>
+    <td>
+      {{ formset.empty_form.unit_price.errors }}
+      {{ formset.empty_form.unit_price }}
+    </td>
+    <td class="text-center">
+      <span class="d-none">
+        {{ formset.empty_form.DELETE }}
+      </span>
+      <button type="button" class="btn btn-outline-danger btn-sm" data-action="remove-row">
+        <i class="bi bi-x-circle"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+
 <script>
+const formsetPrefix = '{{ formset.prefix|escapejs }}';
+const emptyFormTemplate = document.getElementById('empty-form-template');
+const formsetBody = document.getElementById('formset-body');
+
+function wireRemoveButtons(context) {
+  const scope = context || document;
+  scope.querySelectorAll('[data-action="remove-row"]').forEach((btn) => {
+    if (btn.dataset.bound === 'true') {
+      return;
+    }
+    btn.dataset.bound = 'true';
+    btn.addEventListener('click', () => {
+      const row = btn.closest('.form-row');
+      if (!row) {
+        return;
+      }
+      const deleteInput = row.querySelector(`input[type="checkbox"][name$='-DELETE']`);
+      if (deleteInput) {
+        deleteInput.checked = true;
+      }
+      row.classList.add('table-warning');
+      row.style.display = 'none';
+    });
+  });
+}
+
+wireRemoveButtons(formsetBody);
+
 function addFormRow() {
-  const totalForms = document.getElementById('id_'+ '{{ formset.prefix }}' +'-TOTAL_FORMS');
-  const formIdx = parseInt(totalForms.value, 10);
-  alert('To support dynamic add properly, we should render empty_form. For now, add items and Save, then Edit to add more.');
+  const totalFormsInput = document.getElementById(`id_${formsetPrefix}-TOTAL_FORMS`);
+  const formIdx = parseInt(totalFormsInput.value, 10);
+  const templateHtml = emptyFormTemplate.innerHTML.trim();
+  const formHtml = templateHtml.replace(/__prefix__/g, formIdx);
+  const wrapper = document.createElement('tbody');
+  wrapper.innerHTML = formHtml;
+  const newRow = wrapper.querySelector('tr');
+  formsetBody.appendChild(newRow);
+  wireRemoveButtons(newRow);
+  totalFormsInput.value = formIdx + 1;
 }
 </script>
 {% endblock %}

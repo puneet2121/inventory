@@ -14,6 +14,7 @@ class Customer(TenantAwareModel):
     city = models.CharField(max_length=100)
     customer_type = models.CharField(max_length=1, choices=CUSTOMER_TYPE_CHOICES)
     contact = models.CharField(max_length=15)
+    device = models.CharField(max_length=120, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     shop = models.CharField(max_length=255, blank=True, null=True)
     total_debt = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)

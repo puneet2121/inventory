@@ -2,6 +2,8 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('inventoryManager', () => ({
         isGridView: true,
         searchQuery: '',
+        importFile: null,
+        isImporting: false,
         filters: {
             category: '',
             minPrice: '',
@@ -88,11 +90,9 @@ document.addEventListener('alpine:init', () => {
 
         async exportInventory() {
             try {
-                const response = await fetch('/api/inventory/export/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': this.getCsrfToken()
-                    }
+                // Export is a file download; use GET to avoid CSRF.
+                const response = await fetch('/inventory/export_inventory/', {
+                    method: 'GET'
                 });
 
                 if (response.ok) {
@@ -118,18 +118,23 @@ document.addEventListener('alpine:init', () => {
             modal.show();
         },
 
-        async handleImport(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        selectImportFile(event) {
+            this.importFile = event && event.target && event.target.files ? event.target.files[0] : null;
+        },
 
-            const formData = new FormData();
-            formData.append('file', file);
+        async submitImport() {
+            const file = this.importFile;
+            if (!file || this.isImporting) return;
 
+            this.isImporting = true;
             try {
-                const response = await fetch('/api/inventory/import/', {
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await fetch('/inventory/import_inventory/', {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': this.getCsrfToken()
+                        'X-CSRFToken': this.getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: formData
                 });
@@ -138,10 +143,23 @@ document.addEventListener('alpine:init', () => {
                     this.showNotification('Import completed successfully', 'success');
                     window.location.reload();
                 } else {
-                    throw new Error('Import failed');
+                    let message = `Import failed (HTTP ${response.status})`;
+                    try {
+                        const data = await response.json();
+                        if (data && data.message) message = data.message;
+                    } catch (e) {
+                        try {
+                            const text = await response.text();
+                            if (text) message = `${message}: ${text.slice(0, 200)}`;
+                        } catch (e2) {
+                            // ignore
+                        }
+                    }
+                    this.showNotification(message, 'error');
+                    console.error('Import failed:', response.status);
                 }
-            } catch (error) {
-                this.showNotification('Error importing inventory', 'error');
+            } finally {
+                this.isImporting = false;
             }
         },
 
@@ -175,7 +193,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         getCsrfToken() {
-            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+            // Read csrftoken from the hidden input rendered by Django.
+            const el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : '';
         }
     }));
 });

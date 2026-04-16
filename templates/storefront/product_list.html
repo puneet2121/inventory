@@ -1,0 +1,192 @@
+{% extends 'storefront/base_storefront.html' %}
+{% load static %}
+
+{% block title %}Shop{% endblock %}
+
+{% block storefront_content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Storefront</h1>
+            <p class="text-muted mb-0">Browse published products synced with your IMS inventory.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if customer_signup_token %}
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newCustomerQrModal">
+                    New customer QR
+                </button>
+            {% else %}
+                <span class="text-muted small">Login as staff to generate customer QR.</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if products %}
+        <div class="row g-4">
+            {% for listing in products %}
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        {% with listing.images.first as hero %}
+                            {% if hero and hero.resolved_url %}
+                                <img src="{{ hero.resolved_url }}" class="card-img-top" alt="{{ hero.alt_text|default:listing.product.name }}">
+                            {% else %}
+                                <img src="{% static 'images/placeholder.png' %}" class="card-img-top" alt="Placeholder">
+                            {% endif %}
+                        {% endwith %}
+                        <div class="card-body">
+                            {% if listing.is_trending %}
+                            <span class="badge bg-warning text-dark mb-2">Trending</span>
+                            {% endif %}
+                            <h5 class="card-title">{{ listing.product.name }}</h5>
+                            <p class="card-text text-muted small mb-2">{{ listing.short_tagline }}</p>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <span class="fw-semibold fs-5">₹{{ listing.active_price }}</span>
+                                {% if listing.seven_day_test_price and listing.active_price != listing.list_price %}
+                                    <span class="text-muted text-decoration-line-through">₹{{ listing.list_price }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="input-group stylish-cart-control">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        Qty
+                                    </span>
+                                    <input type="number"
+                                           class="form-control border-start-0"
+                                           min="1"
+                                           value="1"
+                                           data-qty-for="{{ forloop.counter0 }}">
+                                    <button type="button"
+                                            class="btn btn-primary storefront-add-to-cart rounded-end"
+                                            title="Add to cart"
+                                            aria-label="Add {{ listing.product.name }} to cart"
+                                            data-index="{{ forloop.counter0 }}"
+                                            data-slug="{{ listing.slug }}"
+                                            data-name="{{ listing.product.name|escape }}"
+                                            data-sku="{{ listing.product.sku|default:''|escape }}"
+                                            data-price="{{ listing.active_price }}">
+                                        <i class="bi bi-cart-plus"></i>
+                                    </button>
+                                </div>
+                                <a href="{% url 'storefront:product_detail' listing.slug %}" class="btn btn-outline-secondary w-100">
+                                    View details
+                                </a>
+                                <div class="badge bg-success-subtle text-success-emphasis align-self-start d-none"
+                                     id="cardCartFeedback-{{ forloop.counter0 }}">
+                                    Added!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">No storefront products published yet.</div>
+    {% endif %}
+</div>
+
+{% if customer_signup_token %}
+<div class="modal fade" id="newCustomerQrModal" tabindex="-1" aria-labelledby="newCustomerQrModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newCustomerQrModalLabel">New customer signup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">Scan this QR in-store to add a new customer (type C) for this company.</p>
+                <div class="d-flex justify-content-center mb-3">
+                    <img class="img-fluid border rounded p-2 bg-white"
+                         alt="Customer signup QR"
+                         src="{% url 'storefront:customer_signup_qr' customer_signup_token %}">
+                </div>
+                <label class="form-label small text-muted">Signup link</label>
+                <div class="input-group">
+                    <input id="customerSignupUrlInput" type="text" class="form-control" value="{{ customer_signup_url }}" readonly>
+                    <button id="copyCustomerSignupUrlBtn" type="button" class="btn btn-outline-secondary">Copy</button>
+                </div>
+                <div id="customerSignupCopyFeedback" class="text-success small mt-2 d-none">Copied.</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block js_include_bottom %}
+    {{ block.super }}
+    <script>
+        (function () {
+            const cartKey = 'storefront_cart';
+            const addButtons = document.querySelectorAll('.storefront-add-to-cart');
+            const copyBtn = document.getElementById('copyCustomerSignupUrlBtn');
+            const urlInput = document.getElementById('customerSignupUrlInput');
+            const copyFeedback = document.getElementById('customerSignupCopyFeedback');
+
+            function getCart() {
+                try {
+                    return JSON.parse(localStorage.getItem(cartKey)) || [];
+                } catch (err) {
+                    console.warn('Failed to parse cart payload', err);
+                    return [];
+                }
+            }
+
+            function saveCart(items) {
+                localStorage.setItem(cartKey, JSON.stringify(items));
+            }
+
+            function addToCart(product, quantity) {
+                const items = getCart();
+                const key = `${product.slug}-${product.variant?.id || 'base'}`;
+                const existing = items.find((item) => item.key === key);
+                if (existing) {
+                    existing.quantity += quantity;
+                } else {
+                    items.push({ ...product, quantity, key });
+                }
+                saveCart(items);
+            }
+
+            addButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const index = button.dataset.index;
+                    const qtyInput = document.querySelector(`[data-qty-for="${index}"]`);
+                    const feedback = document.getElementById(`cardCartFeedback-${index}`);
+                    const quantity = Math.max(1, Number(qtyInput?.value) || 1);
+                    const product = {
+                        slug: button.dataset.slug,
+                        name: button.dataset.name,
+                        sku: button.dataset.sku,
+                        price: parseFloat(button.dataset.price),
+                        variant: null,
+                    };
+                    addToCart(product, quantity);
+                    if (feedback) {
+                        feedback.classList.remove('d-none');
+                        feedback.textContent = `${quantity} item${quantity > 1 ? 's' : ''} added.`;
+                        setTimeout(() => feedback.classList.add('d-none'), 3000);
+                    }
+                });
+            });
+
+            if (copyBtn && urlInput) {
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(urlInput.value);
+                        if (copyFeedback) {
+                            copyFeedback.classList.remove('d-none');
+                            setTimeout(() => copyFeedback.classList.add('d-none'), 2000);
+                        }
+                    } catch (err) {
+                        // Fallback for older browsers.
+                        urlInput.select();
+                        document.execCommand('copy');
+                    }
+                });
+            }
+        })();
+    </script>
+{% endblock %}
