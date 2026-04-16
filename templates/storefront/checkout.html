@@ -1,0 +1,185 @@
+{% extends 'storefront/base_storefront.html' %}
+{% load static %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block storefront_content %}
+<div class="container py-4">
+    <a href="{% url 'storefront:product_list' %}" class="text-decoration-none">&larr; Continue shopping</a>
+    <div class="row g-4 mt-2">
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h1 class="h4 mb-1">Your cart</h1>
+                            <p class="text-muted mb-0">Review items before completing checkout.</p>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" id="clearCartBtn">Clear cart</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Item</th>
+                                    <th scope="col" class="text-center">Qty</th>
+                                    <th scope="col" class="text-end">Price</th>
+                                    <th scope="col" class="text-end">Subtotal</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="checkoutCartBody">
+                                <tr>
+                                    <td colspan="5" class="text-muted text-center py-4">Cart is empty.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="fw-semibold">Grand total</span>
+                        <span class="fw-bold fs-4" id="checkoutCartTotal">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Contact & delivery</h2>
+                    <form id="checkoutForm" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="checkoutName" class="form-label">Full name</label>
+                            <input type="text" class="form-control" id="checkoutName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkoutEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="checkoutEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkoutPhone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="checkoutPhone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkoutNotes" class="form-label">Order notes</label>
+                            <textarea class="form-control" id="checkoutNotes" rows="3" placeholder="Any delivery preferences or bundle requests?"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg" id="placeOrderBtn">
+                            Submit order request
+                        </button>
+                    </form>
+                    <div class="alert alert-info small mt-3">
+                        This storefront preview stores cart data in your browser. Hook this form to Sales Orders when backend APIs are ready.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js_include_bottom %}
+    {{ block.super }}
+    <script>
+        (function () {
+            const cartKey = 'storefront_cart';
+            const cartBody = document.getElementById('checkoutCartBody');
+            const totalEl = document.getElementById('checkoutCartTotal');
+            const clearBtn = document.getElementById('clearCartBtn');
+            const checkoutForm = document.getElementById('checkoutForm');
+
+            function currency(amount) {
+                return `₹${amount.toFixed(2)}`;
+            }
+
+            function getCart() {
+                try {
+                    return JSON.parse(localStorage.getItem(cartKey)) || [];
+                } catch (err) {
+                    console.warn('Failed to parse cart data', err);
+                    return [];
+                }
+            }
+
+            function saveCart(items) {
+                localStorage.setItem(cartKey, JSON.stringify(items));
+            }
+
+            function renderCart() {
+                const items = getCart();
+                if (!items.length) {
+                    cartBody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">Cart is empty.</td></tr>';
+                    totalEl.textContent = currency(0);
+                    return;
+                }
+
+                let total = 0;
+                cartBody.innerHTML = items.map((item, index) => {
+                    const subtotal = item.price * item.quantity;
+                    total += subtotal;
+                    return `
+                        <tr data-index="${index}">
+                            <td>
+                                <div class="fw-semibold">${item.name}</div>
+                                <div class="small text-muted">${item.sku || 'SKU pending'}</div>
+                                ${item.variant ? `<div class="small text-muted">${item.variant.option_name}: ${item.variant.option_value}</div>` : ''}
+                            </td>
+                            <td class="text-center" style="width:110px;">
+                                <input type="number" class="form-control form-control-sm" min="1" value="${item.quantity}" data-role="quantity">
+                            </td>
+                            <td class="text-end">${currency(item.price)}</td>
+                            <td class="text-end">${currency(subtotal)}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-link text-danger" data-role="remove">&times;</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                totalEl.textContent = currency(total);
+            }
+
+            cartBody.addEventListener('input', (event) => {
+                if (event.target.dataset.role !== 'quantity') {
+                    return;
+                }
+                const row = event.target.closest('tr');
+                const idx = Number(row?.dataset.index);
+                const items = getCart();
+                if (!Number.isInteger(idx) || !items[idx]) {
+                    return;
+                }
+                const value = Math.max(1, Number(event.target.value) || 1);
+                items[idx].quantity = value;
+                saveCart(items);
+                renderCart();
+            });
+
+            cartBody.addEventListener('click', (event) => {
+                if (event.target.dataset.role !== 'remove') {
+                    return;
+                }
+                const row = event.target.closest('tr');
+                const idx = Number(row?.dataset.index);
+                const items = getCart();
+                if (!Number.isInteger(idx) || !items[idx]) {
+                    return;
+                }
+                items.splice(idx, 1);
+                saveCart(items);
+                renderCart();
+            });
+
+            clearBtn.addEventListener('click', () => {
+                localStorage.removeItem(cartKey);
+                renderCart();
+            });
+
+            checkoutForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                alert('Order submission will be wired to POS soon. For now, sales can copy cart data from this page.');
+            });
+
+            renderCart();
+        })();
+    </script>
+{% endblock %}
